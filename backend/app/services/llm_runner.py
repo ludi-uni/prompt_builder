@@ -5,7 +5,7 @@ import yaml
 from fastapi import HTTPException
 
 from app.config import CONFIG_DIR
-from app.models import LLMConfig, LLMTestResponse
+from app.models import LLMConfig, LLMHealthResponse, LLMTestResponse
 
 
 class LLMNotConfiguredError(Exception):
@@ -75,6 +75,51 @@ class LlamaServerRunner:
             raise HTTPException(
                 status_code=502, detail="Unexpected llama-server response"
             ) from exc
+
+
+async def check_llm_health(server_url: str | None = None) -> LLMHealthResponse:
+    config = load_llm_config()
+    if config is None and server_url is None:
+        return LLMHealthResponse(
+            configured=False,
+            reachable=False,
+            error="LLM is not configured",
+        )
+
+    url = (server_url or config.server_url).rstrip("/")
+    try:
+        async with httpx.AsyncClient(timeout=5.0) as client:
+            for path in ("/health", "/v1/models"):
+                try:
+                    response = await client.get(url + path)
+                    if response.status_code == 200:
+                        return LLMHealthResponse(
+                            configured=config is not None,
+                            reachable=True,
+                            server_url=url,
+                        )
+                except httpx.HTTPError:
+                    continue
+        return LLMHealthResponse(
+            configured=config is not None,
+            reachable=False,
+            server_url=url,
+            error="llama-server did not respond OK",
+        )
+    except httpx.ConnectError:
+        return LLMHealthResponse(
+            configured=config is not None,
+            reachable=False,
+            server_url=url,
+            error=f"Cannot connect to {url}. Run: npm run llama",
+        )
+    except httpx.TimeoutException:
+        return LLMHealthResponse(
+            configured=config is not None,
+            reachable=False,
+            server_url=url,
+            error="Connection timed out",
+        )
 
 
 async def run_llm_test(prompt: str) -> LLMTestResponse:

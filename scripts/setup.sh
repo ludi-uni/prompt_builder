@@ -23,6 +23,11 @@ if [[ ! -f config/llm.yaml ]]; then
   echo "==> Created config/llm.yaml from example"
 fi
 
+if [[ ! -f config/llama.yaml ]]; then
+  cp config/llama.yaml.example config/llama.yaml
+  echo "==> Created config/llama.yaml from example"
+fi
+
 echo ""
 echo "Setup complete."
 echo "  npm run dev     - start Backend + Frontend"

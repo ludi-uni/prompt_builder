@@ -21,6 +21,11 @@ if (-not (Test-Path "config\llm.yaml")) {
     Write-Host "==> Created config\llm.yaml from example" -ForegroundColor Green
 }
 
+if (-not (Test-Path "config\llama.yaml")) {
+    Copy-Item "config\llama.yaml.example" "config\llama.yaml"
+    Write-Host "==> Created config\llama.yaml from example" -ForegroundColor Green
+}
+
 Write-Host ""
 Write-Host "Setup complete." -ForegroundColor Green
 Write-Host "  npm run dev     - start Backend + Frontend"

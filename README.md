@@ -14,6 +14,8 @@
 |----------|------|
 | `npm run setup` | 初回セットアップ（venv・依存関係・`config/llm.yaml`） |
 | `npm run dev` | Backend + Frontend を同時起動 |
+| `npm run dev:all` | llama-server + Prompt Studio を同時起動 |
+| `npm run llama` | llama-server を起動（要 GGUF モデル） |
 | `npm run dev:api` | Backend のみ起動 |
 | `npm run dev:web` | Frontend のみ起動 |
 | `npm run test` | Backend テスト実行 |
@@ -73,7 +75,8 @@ prompt_builder/
 ├── layers/            # レイヤー Markdown + layers.yaml
 ├── exports/           # Export 定義 YAML
 ├── workspace/         # 生成物出力先
-└── config/            # LLM 設定（llm.yaml）
+├── models/            # GGUF モデル置き場
+└── config/            # LLM / llama-server 設定
 ```
 
 ## 使い方
@@ -85,16 +88,60 @@ prompt_builder/
 5. **Export Prompt** で `workspace/generated_prompt.md` に出力（クリップボードにもコピー）
 6. **Run Test** で LLM 動作確認（任意）
 
-## LLM 設定（llama-server）
+## LLM 設定（llama.cpp）
 
-1. ローカルで llama-server を起動
-2. GUI の **LLM** ボタンから URL を設定（デフォルト: `http://127.0.0.1:8080`）
-3. または `config/llm.yaml` を編集（`npm run setup` で example から自動生成）
+Prompt Studio は llama-server（llama.cpp）の OpenAI 互換 API に接続します。
+
+### クイックスタート
+
+```powershell
+# 1. llama-server をインストール（PATH に llama-server が通る状態にする）
+#    https://github.com/ggml-org/llama.cpp/releases
+
+# 2. GGUF モデルを models/ に配置
+#    例: models/your-model.gguf
+
+# 3. config/llama.yaml でモデルパスを指定（npm run setup で自動生成）
+#    model: models/your-model.gguf
+
+# 4. llama-server を起動
+npm run llama
+
+# 5. 別ターミナルで Prompt Studio を起動
+npm run dev
+```
+
+`npm run dev:all` で llama-server と Prompt Studio を同時起動できます。
+
+### GUI からの設定
+
+1. **LLM** ボタン → Server URL を確認（デフォルト: `http://127.0.0.1:8080`）
+2. **接続確認** で llama-server への接続をテスト
+3. **Run Test** でプロンプトを LLM に送信
+
+ツールバーの LLM 表示: `✓` 接続 OK / `!` 未接続 / `○` 未設定
+
+### 設定ファイル
+
+**`config/llama.yaml`** — llama-server 起動用（`npm run llama`）
+
+```yaml
+server:
+  host: 127.0.0.1
+  port: 8080
+model: models/your-model.gguf
+ctx_size: 4096
+n_gpu_layers: -1
+```
+
+**`config/llm.yaml`** — Prompt Studio からの接続先
 
 ```yaml
 server_url: http://127.0.0.1:8080
 timeout_seconds: 120.0
 ```
+
+環境変数で上書き可能: `LLAMA_MODEL`, `LLAMA_SERVER`, `LLAMA_HOST`, `LLAMA_PORT`
 
 ## Export の追加
 

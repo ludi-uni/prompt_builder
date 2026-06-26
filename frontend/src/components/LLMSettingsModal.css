@@ -47,3 +47,44 @@
   border-color: var(--accent);
   color: #fff;
 }
+
+.llm-modal .llm-health-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 4px;
+}
+
+.llm-modal .llm-health-row .btn-secondary {
+  padding: 8px 12px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--bg-input);
+  color: var(--text-primary);
+  cursor: pointer;
+  font-size: 13px;
+}
+
+.llm-modal .llm-health-row .btn-secondary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.llm-modal .llm-health-status {
+  font-size: 13px;
+}
+
+.llm-modal .llm-health-status.ok {
+  color: #2ecc71;
+}
+
+.llm-modal .llm-health-status.error {
+  color: #e74c3c;
+}
+
+.llm-modal code {
+  font-size: 12px;
+  padding: 1px 4px;
+  border-radius: 4px;
+  background: var(--bg-input);
+}

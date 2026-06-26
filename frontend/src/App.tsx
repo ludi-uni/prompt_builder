@@ -35,6 +35,7 @@ function App() {
   const [showLLMSettings, setShowLLMSettings] = useState(false);
   const [llmConfig, setLLMConfig] = useState<LLMConfig | null>(null);
   const [llmConfigured, setLLMConfigured] = useState(false);
+  const [llmReachable, setLLMReachable] = useState(false);
   const [llmResponse, setLLMResponse] = useState<string | null>(null);
   const [llmLoading, setLLMLoading] = useState(false);
 
@@ -74,6 +75,15 @@ function App() {
     [handleError],
   );
 
+  const refreshLLMHealth = useCallback(async (serverUrl?: string) => {
+    try {
+      const health = await api.checkLLMHealth(serverUrl);
+      setLLMReachable(health.reachable);
+    } catch {
+      setLLMReachable(false);
+    }
+  }, []);
+
   const loadInitial = useCallback(async () => {
     try {
       const [layersRes, exportsRes, llmRes] = await withRetry(() =>
@@ -83,6 +93,7 @@ function App() {
       setExports(exportsRes.exports);
       setLLMConfigured(llmRes.configured);
       setLLMConfig(llmRes.config);
+      void refreshLLMHealth(llmRes.config?.server_url);
 
       if (layersRes.layers.length > 0) {
         const firstLayer = layersRes.layers[0].id;
@@ -106,7 +117,7 @@ function App() {
     } catch (err) {
       handleError(err, 'Failed to load data');
     }
-  }, [handleError, refreshPrompt]);
+  }, [handleError, refreshPrompt, refreshLLMHealth]);
 
   useEffect(() => {
     void loadInitial();
@@ -326,6 +337,7 @@ function App() {
     try {
       const result = await api.testLLM(builtPrompt);
       setLLMResponse(result.response);
+      setLLMReachable(true);
       showToast('LLM test completed', 'success');
     } catch (err) {
       handleError(err, 'LLM test failed');
@@ -340,6 +352,7 @@ function App() {
       const result = await api.saveLLMConfig(config);
       setLLMConfig(result.config);
       setLLMConfigured(true);
+      await refreshLLMHealth(config.server_url);
       showToast('LLM settings saved', 'success');
     } catch (err) {
       handleError(err, 'Failed to save LLM settings');
@@ -357,6 +370,7 @@ function App() {
         onRunTest={() => void handleRunTest()}
         onOpenLLMSettings={() => setShowLLMSettings(true)}
         llmConfigured={llmConfigured}
+        llmReachable={llmReachable}
         busy={busy}
       />
       <main className="main-layout">

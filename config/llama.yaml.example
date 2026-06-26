@@ -1,0 +1,20 @@
+# llama-server 起動設定（npm run llama）
+# setup で config/llama.yaml にコピーされます
+
+server:
+  host: 127.0.0.1
+  port: 8080
+
+# llama-server のパス。"auto" で PATH を検索
+binary: auto
+
+# GGUF モデル（プロジェクトルートからの相対パス、または絶対パス）
+model: models/your-model.gguf
+
+# llama-server オプション
+ctx_size: 4096
+n_gpu_layers: -1
+parallel: 1
+
+# 追加 CLI 引数（任意）
+extra_args: []

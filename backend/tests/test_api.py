@@ -128,3 +128,12 @@ def test_bootstrap_skips_when_markdown_exists(tmp_path, monkeypatch):
     assert is_layers_empty() is False
     assert ensure_layers_initialized() is False
     assert not (layers_dir / "system" / "role.md").exists()
+
+
+def test_llm_health_not_configured():
+    response = client.get("/api/llm/health")
+    assert response.status_code == 200
+    data = response.json()
+    assert data["configured"] is False
+    assert data["reachable"] is False
+    assert data["error"] is not None

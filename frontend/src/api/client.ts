@@ -14,6 +14,13 @@ export interface LLMConfig {
   timeout_seconds: number;
 }
 
+export interface LLMHealth {
+  configured: boolean;
+  reachable: boolean;
+  server_url: string | null;
+  error: string | null;
+}
+
 async function request<T>(url: string, init?: RequestInit): Promise<T> {
   const response = await fetch(url, {
     headers: { 'Content-Type': 'application/json', ...init?.headers },
@@ -86,6 +93,10 @@ export const api = {
       method: 'PUT',
       body: JSON.stringify(config),
     }),
+  checkLLMHealth: (serverUrl?: string) => {
+    const query = serverUrl ? `?server_url=${encodeURIComponent(serverUrl)}` : '';
+    return request<LLMHealth>(`/api/llm/health${query}`);
+  },
   testLLM: (prompt: string) =>
     request<{ response: string }>('/api/llm/test', {
       method: 'POST',

@@ -49,3 +49,10 @@ class LLMTestRequest(BaseModel):
 
 class LLMTestResponse(BaseModel):
     response: str
+
+
+class LLMHealthResponse(BaseModel):
+    configured: bool
+    reachable: bool
+    server_url: str | None = None
+    error: str | None = None

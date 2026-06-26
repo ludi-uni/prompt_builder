@@ -18,6 +18,11 @@ workspace/temp/
 
 # Config (local)
 config/llm.yaml
+config/llama.yaml
+
+# Models (large GGUF files)
+models/*.gguf
+models/**/*.gguf
 
 # IDE
 .vscode/

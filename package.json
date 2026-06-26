@@ -6,8 +6,10 @@
   "scripts": {
     "setup": "node scripts/run.mjs setup",
     "dev": "node scripts/dev.mjs",
+    "dev:all": "concurrently -n llama,studio -c yellow,blue \"npm run llama\" \"npm run dev\"",
     "dev:api": "node scripts/run.mjs dev-backend",
     "dev:web": "node scripts/run.mjs dev-frontend",
+    "llama": "node scripts/run.mjs llama",
     "test": "node scripts/run.mjs test",
     "build": "npm run build --prefix frontend",
     "lint": "npm run lint:web && node scripts/run.mjs lint",

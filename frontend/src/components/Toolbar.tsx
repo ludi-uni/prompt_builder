@@ -9,6 +9,7 @@ interface ToolbarProps {
   onRunTest: () => void;
   onOpenLLMSettings: () => void;
   llmConfigured: boolean;
+  llmReachable: boolean;
   busy: boolean;
 }
 
@@ -20,8 +21,16 @@ export function Toolbar({
   onRunTest,
   onOpenLLMSettings,
   llmConfigured,
+  llmReachable,
   busy,
 }: ToolbarProps) {
+  const llmLabel = !llmConfigured ? '○' : llmReachable ? '✓' : '!';
+  const llmTitle = !llmConfigured
+    ? 'LLM 未設定'
+    : llmReachable
+      ? 'llama-server 接続 OK'
+      : 'llama-server に接続できません（npm run llama）';
+
   return (
     <header className="toolbar">
       <div className="toolbar-left">
@@ -45,8 +54,13 @@ export function Toolbar({
         </label>
       </div>
       <div className="toolbar-right">
-        <button type="button" className="btn-secondary" onClick={onOpenLLMSettings}>
-          LLM {llmConfigured ? '✓' : '○'}
+        <button
+          type="button"
+          className="btn-secondary"
+          title={llmTitle}
+          onClick={onOpenLLMSettings}
+        >
+          LLM {llmLabel}
         </button>
         <button
           type="button"
