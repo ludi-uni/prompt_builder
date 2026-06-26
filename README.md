@@ -79,14 +79,21 @@ prompt_builder/
 └── config/            # LLM / llama-server 設定
 ```
 
-## 使い方
+## 使い方（v0.2）
 
-1. 左ペインでレイヤー・Markdown ファイルを選択
-2. 中央ペインで編集（Edit / Preview タブ、Ctrl+S で保存）
-3. 上部 Export ドロップダウンで用途を切り替え
-4. 右ペインで完成 Prompt を Rendered / Raw 表示
-5. **Export Prompt** で `workspace/generated_prompt.md` に出力（クリップボードにもコピー）
-6. **Run Test** で LLM 動作確認（任意）
+1. **Components** ボタンで左スライドオーバーから Markdown ファイルを選択
+2. 中央 **Editor** で編集（停止 500ms 後に自動保存 → Prompt 自動更新）
+3. 上部 **Mode** ラジオで用途を切り替え（Chat / AITuber / API 等）
+4. **RUN TEST** で LLM 動作確認（右ペイン **Test Result** に出力・メトリクス表示）
+5. **Show Prompt** で完成 Prompt を表示（**Full / Diff / vs Mode / vs Git** タブ）
+6. workspace 出力は **⋯ メニュー → Export to workspace**（`Ctrl+Shift+E`）
+
+### ショートカット
+
+| キー | 動作 |
+|------|------|
+| `Ctrl+S` | 即時保存 |
+| `Ctrl+Shift+E` | workspace に Export |
 
 ## LLM 設定（llama.cpp）
 

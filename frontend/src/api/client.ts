@@ -1,6 +1,7 @@
 export interface LayerMeta {
   id: string;
   name: string;
+  display_name?: string | null;
   description?: string;
 }
 
@@ -12,6 +13,20 @@ export interface ExportItem {
 export interface LLMConfig {
   server_url: string;
   timeout_seconds: number;
+}
+
+export interface LLMUsage {
+  prompt_tokens: number | null;
+  completion_tokens: number | null;
+  total_tokens: number | null;
+  tps: number | null;
+  ttft_ms: number | null;
+  total_ms: number | null;
+}
+
+export interface LLMTestResult {
+  response: string;
+  usage: LLMUsage | null;
 }
 
 export interface LLMHealth {
@@ -44,7 +59,12 @@ export const api = {
   health: () => request<{ status: string }>('/api/health'),
 
   listLayers: () => request<{ layers: LayerMeta[] }>('/api/layers'),
-  createLayer: (body: { id: string; name: string; description?: string }) =>
+  createLayer: (body: {
+    id: string;
+    name: string;
+    display_name?: string;
+    description?: string;
+  }) =>
     request<LayerMeta>('/api/layers', { method: 'POST', body: JSON.stringify(body) }),
   deleteLayer: (id: string, force = false) =>
     request<{ deleted: string }>(`/api/layers/${id}?force=${force}`, {
@@ -81,6 +101,13 @@ export const api = {
   listExports: () => request<{ exports: ExportItem[] }>('/api/exports'),
   buildExport: (exportId: string) =>
     request<{ prompt: string }>(`/api/exports/${exportId}/build`),
+  getGitBaseline: (exportId: string) =>
+    request<{
+      available: boolean;
+      prompt: string | null;
+      source: string | null;
+      message: string | null;
+    }>(`/api/exports/${exportId}/git-baseline`),
   exportToWorkspace: (exportId: string) =>
     request<{ path: string; prompt: string }>(`/api/exports/${exportId}/export`, {
       method: 'POST',
@@ -98,7 +125,7 @@ export const api = {
     return request<LLMHealth>(`/api/llm/health${query}`);
   },
   testLLM: (prompt: string) =>
-    request<{ response: string }>('/api/llm/test', {
+    request<LLMTestResult>('/api/llm/test', {
       method: 'POST',
       body: JSON.stringify({ prompt }),
     }),

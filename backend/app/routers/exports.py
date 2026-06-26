@@ -2,6 +2,7 @@ from fastapi import APIRouter
 from fastapi.responses import PlainTextResponse
 
 from app.config import WORKSPACE_DIR
+from app.services.git_baseline import get_git_baseline
 from app.services.prompt_builder import build_prompt
 from app.services.yaml_loader import list_exports, load_export
 
@@ -28,6 +29,12 @@ def get_export(export_name: str) -> dict:
 def build_export(export_name: str) -> dict:
     prompt = build_prompt(export_name)
     return {"prompt": prompt}
+
+
+@router.get("/{export_name}/git-baseline")
+def export_git_baseline(export_name: str) -> dict:
+    load_export(export_name)
+    return get_git_baseline()
 
 
 @router.get("/{export_name}/build/text", response_class=PlainTextResponse)

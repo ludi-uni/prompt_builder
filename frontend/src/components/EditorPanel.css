@@ -43,6 +43,18 @@
   border-radius: 4px;
 }
 
+.save-status {
+  font-size: 11px;
+  color: var(--text-secondary);
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.save-status-error {
+  color: var(--danger);
+  background: rgba(239, 68, 68, 0.12);
+}
+
 .editor-tabs {
   display: flex;
   align-items: center;
@@ -67,13 +79,6 @@
 .editor-tabs button.active {
   background: var(--bg-active);
   color: var(--accent);
-}
-
-.btn-save {
-  margin-left: 8px;
-  padding: 6px 14px !important;
-  background: var(--accent) !important;
-  color: #fff !important;
 }
 
 .btn-save:disabled {

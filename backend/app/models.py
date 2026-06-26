@@ -4,6 +4,7 @@ from pydantic import BaseModel, Field
 class LayerMeta(BaseModel):
     id: str
     name: str
+    display_name: str | None = None
     description: str | None = None
 
 
@@ -24,11 +25,13 @@ class ExportConfig(BaseModel):
 class LayerCreate(BaseModel):
     id: str = Field(min_length=1, pattern=r"^[a-z][a-z0-9_-]*$")
     name: str = Field(min_length=1)
+    display_name: str | None = None
     description: str | None = None
 
 
 class LayerUpdate(BaseModel):
     name: str | None = None
+    display_name: str | None = None
     description: str | None = None
 
 
@@ -47,8 +50,18 @@ class LLMTestRequest(BaseModel):
     prompt: str
 
 
+class LLMUsageMetrics(BaseModel):
+    prompt_tokens: int | None = None
+    completion_tokens: int | None = None
+    total_tokens: int | None = None
+    tps: float | None = None
+    ttft_ms: float | None = None
+    total_ms: float | None = None
+
+
 class LLMTestResponse(BaseModel):
     response: str
+    usage: LLMUsageMetrics | None = None
 
 
 class LLMHealthResponse(BaseModel):

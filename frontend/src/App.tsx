@@ -5,25 +5,48 @@ import {
   readFileAsText,
 } from './utils/markdownFiles';
 import { withRetry } from './utils/retry';
-import { api, type ExportItem, type LayerMeta, type LLMConfig } from './api/client';
+import {
+  api,
+  type ExportItem,
+  type LayerMeta,
+  type LLMConfig,
+  type LLMUsage,
+} from './api/client';
+import { ComponentsPanel } from './components/ComponentsPanel';
 import { EditorPanel } from './components/EditorPanel';
-import { LayersPanel } from './components/LayersPanel';
 import { LLMSettingsModal } from './components/LLMSettingsModal';
-import { PreviewPanel } from './components/PreviewPanel';
+import { PromptPanel } from './components/PromptPanel';
+import { TestResultPanel } from './components/TestResultPanel';
 import { Toast } from './components/Toast';
 import { Toolbar } from './components/Toolbar';
+import { useAutoSave } from './hooks/useAutoSave';
+import { useLayoutMode } from './hooks/useLayoutMode';
+import { getLayerDisplayName } from './utils/displayName';
 import './App.css';
+
+async function fetchAllLayerFiles(
+  layers: LayerMeta[],
+): Promise<Record<string, string[]>> {
+  const entries = await Promise.all(
+    layers.map(async (layer) => {
+      const result = await api.listFiles(layer.id);
+      return [layer.id, result.files] as const;
+    }),
+  );
+  return Object.fromEntries(entries);
+}
 
 function App() {
   const [layers, setLayers] = useState<LayerMeta[]>([]);
   const [exports, setExports] = useState<ExportItem[]>([]);
   const [selectedLayerId, setSelectedLayerId] = useState<string | null>(null);
   const [selectedFile, setSelectedFile] = useState<string | null>(null);
-  const [files, setFiles] = useState<string[]>([]);
+  const [layerFiles, setLayerFiles] = useState<Record<string, string[]>>({});
   const [content, setContent] = useState('');
   const [savedContent, setSavedContent] = useState('');
   const [selectedExport, setSelectedExport] = useState<string | null>(null);
   const [builtPrompt, setBuiltPrompt] = useState('');
+  const [previousPrompt, setPreviousPrompt] = useState('');
   const [previewMode, setPreviewMode] = useState<'rendered' | 'raw'>('rendered');
   const [editorTab, setEditorTab] = useState<'edit' | 'preview'>('edit');
   const [promptLoading, setPromptLoading] = useState(false);
@@ -37,9 +60,16 @@ function App() {
   const [llmConfigured, setLLMConfigured] = useState(false);
   const [llmReachable, setLLMReachable] = useState(false);
   const [llmResponse, setLLMResponse] = useState<string | null>(null);
+  const [llmUsage, setLLMUsage] = useState<LLMUsage | null>(null);
   const [llmLoading, setLLMLoading] = useState(false);
 
-  const dirty = content !== savedContent;
+  const {
+    showComponents,
+    showPrompt,
+    toggleComponents,
+    closeComponents,
+    togglePrompt,
+  } = useLayoutMode();
 
   const showToast = useCallback(
     (message: string, type: 'error' | 'success' | 'info' = 'info') => {
@@ -65,7 +95,12 @@ function App() {
       setPromptLoading(true);
       try {
         const result = await api.buildExport(exportId);
-        setBuiltPrompt(result.prompt);
+        setBuiltPrompt((prev) => {
+          if (prev && prev !== result.prompt) {
+            setPreviousPrompt(prev);
+          }
+          return result.prompt;
+        });
       } catch (err) {
         handleError(err, 'Failed to build prompt');
       } finally {
@@ -74,6 +109,23 @@ function App() {
     },
     [handleError],
   );
+
+  const { saveStatus, flushSave } = useAutoSave({
+    layerId: selectedLayerId,
+    filename: selectedFile,
+    content,
+    savedContent,
+    setSavedContent,
+    onAfterSave: () => refreshPrompt(selectedExport),
+  });
+
+  const refreshLayerFiles = useCallback(async (layerList: LayerMeta[]) => {
+    if (layerList.length === 0) {
+      setLayerFiles({});
+      return;
+    }
+    setLayerFiles(await fetchAllLayerFiles(layerList));
+  }, []);
 
   const refreshLLMHealth = useCallback(async (serverUrl?: string) => {
     try {
@@ -94,14 +146,14 @@ function App() {
       setLLMConfigured(llmRes.configured);
       setLLMConfig(llmRes.config);
       void refreshLLMHealth(llmRes.config?.server_url);
+      await refreshLayerFiles(layersRes.layers);
 
       if (layersRes.layers.length > 0) {
         const firstLayer = layersRes.layers[0].id;
-        setSelectedLayerId(firstLayer);
-        const filesRes = await api.listFiles(firstLayer);
-        setFiles(filesRes.files);
-        if (filesRes.files.length > 0) {
-          const firstFile = filesRes.files[0];
+        const files = (await api.listFiles(firstLayer)).files;
+        if (files.length > 0) {
+          const firstFile = files[0];
+          setSelectedLayerId(firstLayer);
           setSelectedFile(firstFile);
           const fileRes = await api.getFile(firstLayer, firstFile);
           setContent(fileRes.content);
@@ -117,94 +169,73 @@ function App() {
     } catch (err) {
       handleError(err, 'Failed to load data');
     }
-  }, [handleError, refreshPrompt, refreshLLMHealth]);
+  }, [handleError, refreshPrompt, refreshLLMHealth, refreshLayerFiles]);
 
   useEffect(() => {
     void loadInitial();
   }, [loadInitial]);
 
-  const handleSelectLayer = async (layerId: string) => {
-    setSelectedLayerId(layerId);
-    setSelectedFile(null);
-    setContent('');
-    setSavedContent('');
-    try {
-      const filesRes = await api.listFiles(layerId);
-      setFiles(filesRes.files);
-      if (filesRes.files.length > 0) {
-        await handleSelectFile(layerId, filesRes.files[0]);
+  const handleSelectFile = useCallback(
+    async (layerId: string, filename: string, closeDrawer = true) => {
+      await flushSave();
+      try {
+        const fileRes = await api.getFile(layerId, filename);
+        setSelectedLayerId(layerId);
+        setSelectedFile(filename);
+        setContent(fileRes.content);
+        setSavedContent(fileRes.content);
+        if (closeDrawer) {
+          closeComponents();
+        }
+      } catch (err) {
+        handleError(err, 'Failed to load file');
       }
-    } catch (err) {
-      handleError(err, 'Failed to load layer files');
-    }
-  };
+    },
+    [flushSave, closeComponents, handleError],
+  );
 
-  const handleSelectFile = async (layerId: string, filename: string) => {
-    if (
-      dirty &&
-      !window.confirm('You have unsaved changes. Continue without saving?')
-    ) {
-      return;
-    }
+  const handleCreateLayer = async (
+    id: string,
+    name: string,
+    displayName: string,
+    description: string,
+  ) => {
     try {
-      const fileRes = await api.getFile(layerId, filename);
-      setSelectedFile(filename);
-      setContent(fileRes.content);
-      setSavedContent(fileRes.content);
-    } catch (err) {
-      handleError(err, 'Failed to load file');
-    }
-  };
-
-  const handleSave = async () => {
-    if (!selectedLayerId || !selectedFile) return;
-    try {
-      await api.saveFile(selectedLayerId, selectedFile, content);
-      setSavedContent(content);
-      showToast('Saved', 'success');
-      await refreshPrompt(selectedExport);
-    } catch (err) {
-      handleError(err, 'Failed to save file');
-    }
-  };
-
-  const handleCreateLayer = async (id: string, name: string, description: string) => {
-    try {
-      await api.createLayer({ id, name, description: description || undefined });
+      await api.createLayer({
+        id,
+        name,
+        display_name: displayName,
+        description: description || undefined,
+      });
       const layersRes = await api.listLayers();
       setLayers(layersRes.layers);
-      await handleSelectLayer(id);
-      showToast(`Layer "${name}" created`, 'success');
+      await refreshLayerFiles(layersRes.layers);
+      showToast(`Component "${displayName}" created`, 'success');
     } catch (err) {
-      handleError(err, 'Failed to create layer');
+      handleError(err, 'Failed to create component');
     }
   };
 
-  const handleCreateFile = async (filename: string) => {
-    if (!selectedLayerId) return;
+  const handleCreateFile = async (layerId: string, filename: string) => {
     try {
-      const result = await api.createFile(selectedLayerId, filename);
-      const filesRes = await api.listFiles(selectedLayerId);
-      setFiles(filesRes.files);
-      await handleSelectFile(selectedLayerId, result.filename);
+      const result = await api.createFile(layerId, filename);
+      const layersRes = await api.listLayers();
+      await refreshLayerFiles(layersRes.layers);
+      await handleSelectFile(layerId, result.filename, false);
       showToast(`File "${result.filename}" created`, 'success');
     } catch (err) {
       handleError(err, 'Failed to create file');
     }
   };
 
-  const handleImportFiles = async (incoming: File[]) => {
-    if (!selectedLayerId) {
-      showToast('Select a layer before importing files', 'error');
-      return;
-    }
-
+  const handleImportFiles = async (layerId: string, incoming: File[]) => {
     const importable = collectImportableFiles(incoming);
     if (importable.length === 0) {
       showToast('No importable files (.md, .markdown, .txt)', 'error');
       return;
     }
 
+    const existingFiles = layerFiles[layerId] ?? [];
     let imported = 0;
     let skipped = 0;
     let lastImported: string | null = null;
@@ -218,7 +249,7 @@ function App() {
         continue;
       }
 
-      const exists = files.includes(filename);
+      const exists = existingFiles.includes(filename);
       if (exists) {
         const overwrite = window.confirm(`"${filename}" already exists. Overwrite?`);
         if (!overwrite) {
@@ -228,8 +259,11 @@ function App() {
       }
 
       try {
-        const content = await readFileAsText(file);
-        await api.createFile(selectedLayerId, filename, { content, overwrite: exists });
+        const fileContent = await readFileAsText(file);
+        await api.createFile(layerId, filename, {
+          content: fileContent,
+          overwrite: exists,
+        });
         imported += 1;
         lastImported = filename;
       } catch (err) {
@@ -245,10 +279,10 @@ function App() {
       return;
     }
 
-    const filesRes = await api.listFiles(selectedLayerId);
-    setFiles(filesRes.files);
+    const layersRes = await api.listLayers();
+    await refreshLayerFiles(layersRes.layers);
     if (lastImported) {
-      await handleSelectFile(selectedLayerId, lastImported);
+      await handleSelectFile(layerId, lastImported, false);
     }
     await refreshPrompt(selectedExport);
 
@@ -259,16 +293,16 @@ function App() {
     showToast(summary, 'success');
   };
 
-  const handleDeleteFile = async (filename: string) => {
-    if (!selectedLayerId) return;
+  const handleDeleteFile = async (layerId: string, filename: string) => {
     if (!window.confirm(`Delete ${filename}?`)) return;
     try {
-      await api.deleteFile(selectedLayerId, filename);
-      const filesRes = await api.listFiles(selectedLayerId);
-      setFiles(filesRes.files);
-      if (selectedFile === filename) {
-        if (filesRes.files.length > 0) {
-          await handleSelectFile(selectedLayerId, filesRes.files[0]);
+      await api.deleteFile(layerId, filename);
+      const layersRes = await api.listLayers();
+      await refreshLayerFiles(layersRes.layers);
+      if (selectedLayerId === layerId && selectedFile === filename) {
+        const remaining = (await api.listFiles(layerId)).files;
+        if (remaining.length > 0) {
+          await handleSelectFile(layerId, remaining[0], false);
         } else {
           setSelectedFile(null);
           setContent('');
@@ -285,40 +319,52 @@ function App() {
   const handleDeleteLayer = async (layerId: string) => {
     const layer = layers.find((l) => l.id === layerId);
     const force = window.confirm(
-      `Delete layer "${layer?.name ?? layerId}" and all its files?`,
+      `Delete component "${layer ? getLayerDisplayName(layer) : layerId}" and all its files?`,
     );
     if (!force) return;
     try {
       await api.deleteLayer(layerId, true);
       const layersRes = await api.listLayers();
       setLayers(layersRes.layers);
+      await refreshLayerFiles(layersRes.layers);
       if (selectedLayerId === layerId) {
         if (layersRes.layers.length > 0) {
-          await handleSelectLayer(layersRes.layers[0].id);
+          const nextLayer = layersRes.layers[0].id;
+          const nextFiles = (await api.listFiles(nextLayer)).files;
+          if (nextFiles.length > 0) {
+            await handleSelectFile(nextLayer, nextFiles[0], false);
+          } else {
+            setSelectedLayerId(nextLayer);
+            setSelectedFile(null);
+            setContent('');
+            setSavedContent('');
+          }
         } else {
           setSelectedLayerId(null);
           setSelectedFile(null);
-          setFiles([]);
           setContent('');
           setSavedContent('');
         }
       }
-      showToast('Layer deleted', 'success');
+      showToast('Component deleted', 'success');
     } catch (err) {
-      handleError(err, 'Failed to delete layer');
+      handleError(err, 'Failed to delete component');
     }
   };
 
   const handleExportChange = async (exportId: string) => {
+    await flushSave();
     setSelectedExport(exportId);
     setLLMResponse(null);
+    setLLMUsage(null);
     await refreshPrompt(exportId);
   };
 
-  const handleExportPrompt = async () => {
+  const handleExportPrompt = useCallback(async () => {
     if (!selectedExport) return;
     setBusy(true);
     try {
+      await flushSave();
       const result = await api.exportToWorkspace(selectedExport);
       await navigator.clipboard.writeText(result.prompt);
       showToast(`Exported to ${result.path} (copied to clipboard)`, 'success');
@@ -327,16 +373,30 @@ function App() {
     } finally {
       setBusy(false);
     }
-  };
+  }, [selectedExport, showToast, handleError, flushSave]);
+
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key.toLowerCase() === 'e') {
+        e.preventDefault();
+        if (selectedExport && !busy) void handleExportPrompt();
+      }
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [selectedExport, busy, handleExportPrompt]);
 
   const handleRunTest = async () => {
     if (!selectedExport || !builtPrompt) return;
     setBusy(true);
     setLLMLoading(true);
     setLLMResponse(null);
+    setLLMUsage(null);
     try {
+      await flushSave();
       const result = await api.testLLM(builtPrompt);
       setLLMResponse(result.response);
+      setLLMUsage(result.usage);
       setLLMReachable(true);
       showToast('LLM test completed', 'success');
     } catch (err) {
@@ -360,6 +420,8 @@ function App() {
     }
   };
 
+  const layoutClass = showPrompt ? 'layout-detail' : 'layout-focus';
+
   return (
     <div className="app">
       <Toolbar
@@ -369,41 +431,62 @@ function App() {
         onExportPrompt={() => void handleExportPrompt()}
         onRunTest={() => void handleRunTest()}
         onOpenLLMSettings={() => setShowLLMSettings(true)}
+        onToggleComponents={toggleComponents}
+        showPrompt={showPrompt}
+        onTogglePrompt={togglePrompt}
         llmConfigured={llmConfigured}
         llmReachable={llmReachable}
         busy={busy}
       />
-      <main className="main-layout">
-        <LayersPanel
-          layers={layers}
-          selectedLayerId={selectedLayerId}
-          selectedFile={selectedFile}
-          files={files}
-          onSelectLayer={(id) => void handleSelectLayer(id)}
-          onSelectFile={(file) => {
-            if (selectedLayerId) void handleSelectFile(selectedLayerId, file);
-          }}
-          onCreateLayer={handleCreateLayer}
-          onCreateFile={handleCreateFile}
-          onImportFiles={handleImportFiles}
-          onDeleteFile={(file) => handleDeleteFile(file)}
-          onDeleteLayer={(id) => handleDeleteLayer(id)}
-        />
+      {showComponents && (
+        <>
+          <button
+            type="button"
+            className="drawer-backdrop"
+            aria-label="Close components"
+            onClick={closeComponents}
+          />
+          <div className="components-drawer">
+            <ComponentsPanel
+              layers={layers}
+              layerFiles={layerFiles}
+              selectedLayerId={selectedLayerId}
+              selectedFile={selectedFile}
+              onSelectFile={(layerId, file) => void handleSelectFile(layerId, file)}
+              onCreateLayer={handleCreateLayer}
+              onCreateFile={handleCreateFile}
+              onImportFiles={handleImportFiles}
+              onDeleteFile={(layerId, file) => void handleDeleteFile(layerId, file)}
+              onDeleteLayer={(id) => void handleDeleteLayer(id)}
+            />
+          </div>
+        </>
+      )}
+      <main className={`main-layout ${layoutClass}`}>
         <EditorPanel
           filename={selectedFile}
           content={content}
-          dirty={dirty}
+          saveStatus={saveStatus}
           onChange={setContent}
-          onSave={handleSave}
+          onFlushSave={flushSave}
           tab={editorTab}
           onTabChange={setEditorTab}
         />
-        <PreviewPanel
-          prompt={builtPrompt}
-          loading={promptLoading}
-          mode={previewMode}
-          onModeChange={setPreviewMode}
+        {showPrompt && (
+          <PromptPanel
+            prompt={builtPrompt}
+            previousPrompt={previousPrompt}
+            exports={exports}
+            selectedExport={selectedExport}
+            loading={promptLoading}
+            mode={previewMode}
+            onModeChange={setPreviewMode}
+          />
+        )}
+        <TestResultPanel
+          inputPrompt={builtPrompt}
           llmResponse={llmResponse}
+          llmUsage={llmUsage}
           llmLoading={llmLoading}
         />
       </main>

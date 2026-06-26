@@ -1,0 +1,35 @@
+.diff-view {
+  white-space: pre-wrap;
+  word-break: break-word;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  line-height: 1.55;
+  margin: 0;
+  padding: 12px;
+  border-radius: 6px;
+  background: var(--bg-code);
+}
+
+.diff-line {
+  display: block;
+}
+
+.diff-same {
+  color: var(--text-secondary);
+}
+
+.diff-add {
+  color: #3fb950;
+  background: rgba(63, 185, 80, 0.12);
+}
+
+.diff-remove {
+  color: #f85149;
+  background: rgba(248, 81, 73, 0.12);
+}
+
+.diff-empty {
+  color: var(--text-secondary);
+  font-size: 13px;
+  margin: 0;
+}

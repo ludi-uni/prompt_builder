@@ -7,18 +7,61 @@
 
 .main-layout {
   display: grid;
-  grid-template-columns: 260px 1fr 1fr;
   flex: 1;
   overflow: hidden;
 }
 
+.main-layout.layout-focus {
+  grid-template-columns: 1fr 1fr;
+}
+
+.main-layout.layout-detail {
+  grid-template-columns: 1fr minmax(280px, 0.9fr) 1fr;
+}
+
+.main-layout .editor-panel {
+  border-right: none;
+}
+
+.drawer-backdrop {
+  position: fixed;
+  inset: 52px 0 0;
+  margin: 0;
+  padding: 0;
+  border: none;
+  background: rgba(0, 0, 0, 0.45);
+  z-index: 40;
+  cursor: pointer;
+}
+
+.components-drawer {
+  position: fixed;
+  top: 52px;
+  left: 0;
+  bottom: 0;
+  width: min(320px, 90vw);
+  z-index: 50;
+  box-shadow: 4px 0 24px rgba(0, 0, 0, 0.35);
+  animation: slide-in 0.2s ease-out;
+}
+
+@keyframes slide-in {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
 @media (max-width: 1024px) {
-  .main-layout {
-    grid-template-columns: 220px 1fr;
+  .main-layout.layout-focus {
+    grid-template-columns: 1fr;
     grid-template-rows: 1fr 1fr;
   }
 
-  .main-layout > :last-child {
-    grid-column: 1 / -1;
+  .main-layout.layout-detail {
+    grid-template-columns: 1fr;
+    grid-template-rows: 1fr 1fr 1fr;
   }
 }

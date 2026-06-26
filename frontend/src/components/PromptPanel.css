@@ -1,0 +1,162 @@
+.prompt-panel {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+  background: var(--bg-panel);
+  border-left: 1px solid var(--border);
+}
+
+.prompt-collapse-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 12px 16px;
+  border: none;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg-panel);
+  color: var(--text-primary);
+  font-size: 14px;
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+}
+
+.prompt-collapse-toggle:hover {
+  background: var(--bg-hover);
+}
+
+.prompt-collapse-icon {
+  font-size: 11px;
+  color: var(--text-secondary);
+  width: 14px;
+}
+
+.prompt-building {
+  margin-left: auto;
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--text-secondary);
+}
+
+.prompt-panel-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 12px 16px 16px;
+}
+
+.prompt-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+
+.prompt-view-tabs,
+.prompt-mode-tabs {
+  display: flex;
+  gap: 4px;
+}
+
+.prompt-view-tabs button,
+.prompt-mode-tabs button {
+  padding: 6px 12px;
+  border: none;
+  background: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+  border-radius: 4px;
+  font-size: 13px;
+}
+
+.prompt-view-tabs button:hover:not(:disabled),
+.prompt-mode-tabs button:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+.prompt-view-tabs button.active,
+.prompt-mode-tabs button.active {
+  background: var(--bg-active);
+  color: var(--accent);
+}
+
+.prompt-view-tabs button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.prompt-compare-select {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.prompt-compare-select select {
+  padding: 6px 10px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg-input);
+  color: var(--text-primary);
+  font-size: 13px;
+}
+
+.prompt-git-hint {
+  margin: 0 0 12px;
+  font-size: 12px;
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
+.prompt-panel .diff-empty {
+  color: var(--text-secondary);
+  font-size: 13px;
+  margin: 0;
+}
+
+.prompt-mode-tabs {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 12px;
+}
+
+.prompt-mode-tabs button {
+  padding: 6px 12px;
+  border: none;
+  background: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+  border-radius: 4px;
+  font-size: 13px;
+}
+
+.prompt-mode-tabs button:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+.prompt-mode-tabs button.active {
+  background: var(--bg-active);
+  color: var(--accent);
+}
+
+.prompt-panel .raw-prompt {
+  white-space: pre-wrap;
+  word-break: break-word;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  line-height: 1.6;
+  margin: 0;
+  color: var(--text-primary);
+}
+
+.prompt-panel .loading-text {
+  color: var(--text-secondary);
+  font-size: 14px;
+}

@@ -27,7 +27,12 @@ def create_layer(body: LayerCreate) -> LayerMeta:
     layer_dir = resolve_layer_dir(body.id)
     layer_dir.mkdir(parents=True, exist_ok=True)
 
-    layer = LayerMeta(id=body.id, name=body.name, description=body.description)
+    layer = LayerMeta(
+        id=body.id,
+        name=body.name,
+        display_name=body.display_name,
+        description=body.description,
+    )
     config.layers.append(layer)
     save_layers_config(config)
     return layer

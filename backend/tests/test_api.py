@@ -21,6 +21,8 @@ def test_list_layers():
     assert response.status_code == 200
     layers = response.json()["layers"]
     assert any(layer["id"] == "persona" for layer in layers)
+    persona = next(layer for layer in layers if layer["id"] == "persona")
+    assert persona.get("display_name") == "🧠 人格"
 
 
 def test_list_exports():
@@ -130,10 +132,64 @@ def test_bootstrap_skips_when_markdown_exists(tmp_path, monkeypatch):
     assert not (layers_dir / "system" / "role.md").exists()
 
 
-def test_llm_health_not_configured():
+def test_llm_health_not_configured(monkeypatch):
+    monkeypatch.setattr("app.services.llm_runner.load_llm_config", lambda: None)
     response = client.get("/api/llm/health")
     assert response.status_code == 200
     data = response.json()
     assert data["configured"] is False
     assert data["reachable"] is False
     assert data["error"] is not None
+
+
+def test_parse_llm_metrics_from_llama_response():
+    from app.services.llm_runner import parse_llm_metrics
+
+    data = {
+        "usage": {
+            "prompt_tokens": 185,
+            "completion_tokens": 431,
+            "total_tokens": 616,
+        },
+        "timings": {
+            "prompt_ms": 2414.45,
+            "predicted_ms": 59691.82,
+        },
+    }
+    metrics = parse_llm_metrics(data, elapsed_ms=62106.0)
+    assert metrics.prompt_tokens == 185
+    assert metrics.completion_tokens == 431
+    assert metrics.total_tokens == 616
+    assert metrics.ttft_ms == 2414.4
+    assert metrics.tps == 7.22
+    assert metrics.total_ms == 62106.0
+
+
+def test_git_baseline_api_uses_workspace_file(tmp_path, monkeypatch):
+    workspace = tmp_path / "workspace"
+    workspace.mkdir()
+    (workspace / "generated_prompt.md").write_text("old prompt\n", encoding="utf-8")
+    (tmp_path / ".git").mkdir()
+
+    monkeypatch.setattr("app.services.git_baseline.ROOT", tmp_path)
+    monkeypatch.setattr("app.services.git_baseline.WORKSPACE_DIR", workspace)
+
+    response = client.get("/api/exports/aituber/git-baseline")
+    assert response.status_code == 200
+    data = response.json()
+    assert data["available"] is True
+    assert data["prompt"] == "old prompt\n"
+    assert data["source"] == "workspace"
+
+
+def test_git_baseline_api_not_available_without_git_or_file(tmp_path, monkeypatch):
+    monkeypatch.setattr("app.services.git_baseline.ROOT", tmp_path)
+    monkeypatch.setattr(
+        "app.services.git_baseline.WORKSPACE_DIR", tmp_path / "workspace"
+    )
+
+    response = client.get("/api/exports/aituber/git-baseline")
+    assert response.status_code == 200
+    data = response.json()
+    assert data["available"] is False
+    assert data["prompt"] is None

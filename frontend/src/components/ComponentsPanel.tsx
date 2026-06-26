@@ -1,118 +1,130 @@
 import { useRef, useState, type ChangeEvent, type DragEvent } from 'react';
 import type { LayerMeta } from '../api/client';
 import { collectImportableFiles } from '../utils/markdownFiles';
-import './LayersPanel.css';
+import { getLayerDisplayName } from '../utils/displayName';
+import './ComponentsPanel.css';
 
-interface LayersPanelProps {
+interface ComponentsPanelProps {
   layers: LayerMeta[];
+  layerFiles: Record<string, string[]>;
   selectedLayerId: string | null;
   selectedFile: string | null;
-  files: string[];
-  onSelectLayer: (layerId: string) => void;
-  onSelectFile: (filename: string) => void;
-  onCreateLayer: (id: string, name: string, description: string) => Promise<void>;
-  onCreateFile: (filename: string) => Promise<void>;
-  onImportFiles: (files: File[]) => Promise<void>;
-  onDeleteFile: (filename: string) => Promise<void>;
+  onSelectFile: (layerId: string, filename: string) => void;
+  onCreateLayer: (
+    id: string,
+    name: string,
+    displayName: string,
+    description: string,
+  ) => Promise<void>;
+  onCreateFile: (layerId: string, filename: string) => Promise<void>;
+  onImportFiles: (layerId: string, files: File[]) => Promise<void>;
+  onDeleteFile: (layerId: string, filename: string) => Promise<void>;
   onDeleteLayer: (layerId: string) => Promise<void>;
 }
 
-export function LayersPanel({
+export function ComponentsPanel({
   layers,
+  layerFiles,
   selectedLayerId,
   selectedFile,
-  files,
-  onSelectLayer,
   onSelectFile,
   onCreateLayer,
   onCreateFile,
   onImportFiles,
   onDeleteFile,
   onDeleteLayer,
-}: LayersPanelProps) {
+}: ComponentsPanelProps) {
   const [showLayerModal, setShowLayerModal] = useState(false);
   const [showFileModal, setShowFileModal] = useState(false);
+  const [fileModalLayerId, setFileModalLayerId] = useState<string | null>(null);
+  const [importLayerId, setImportLayerId] = useState<string | null>(null);
   const [layerId, setLayerId] = useState('');
-  const [layerName, setLayerName] = useState('');
+  const [layerDisplayName, setLayerDisplayName] = useState('');
   const [layerDesc, setLayerDesc] = useState('');
   const [newFilename, setNewFilename] = useState('');
-  const [dragOver, setDragOver] = useState(false);
+  const [dragOverLayerId, setDragOverLayerId] = useState<string | null>(null);
   const [importing, setImporting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleCreateLayer = async () => {
-    if (!layerId.trim() || !layerName.trim()) return;
-    await onCreateLayer(layerId.trim(), layerName.trim(), layerDesc.trim());
+    if (!layerId.trim() || !layerDisplayName.trim()) return;
+    const displayName = layerDisplayName.trim();
+    await onCreateLayer(layerId.trim(), displayName, displayName, layerDesc.trim());
     setShowLayerModal(false);
     setLayerId('');
-    setLayerName('');
+    setLayerDisplayName('');
     setLayerDesc('');
   };
 
+  const openFileModal = (targetLayerId: string) => {
+    setFileModalLayerId(targetLayerId);
+    setShowFileModal(true);
+  };
+
   const handleCreateFile = async () => {
-    if (!newFilename.trim()) return;
-    await onCreateFile(newFilename.trim());
+    if (!fileModalLayerId || !newFilename.trim()) return;
+    await onCreateFile(fileModalLayerId, newFilename.trim());
     setShowFileModal(false);
+    setFileModalLayerId(null);
     setNewFilename('');
   };
 
-  const handleIncomingFiles = async (incoming: FileList | File[]) => {
+  const handleIncomingFiles = async (
+    targetLayerId: string,
+    incoming: FileList | File[],
+  ) => {
     const importable = collectImportableFiles(incoming);
     if (importable.length === 0) return;
     setImporting(true);
     try {
-      await onImportFiles(importable);
+      await onImportFiles(targetLayerId, importable);
     } finally {
       setImporting(false);
-      setDragOver(false);
+      setDragOverLayerId(null);
+      setImportLayerId(null);
     }
   };
 
-  const onDragEnter = (e: DragEvent) => {
+  const onDragEnter = (e: DragEvent, layerIdForDrop: string) => {
     e.preventDefault();
     e.stopPropagation();
     if (e.dataTransfer.types.includes('Files')) {
-      setDragOver(true);
+      setDragOverLayerId(layerIdForDrop);
     }
   };
 
   const onDragOver = (e: DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    e.dataTransfer.dropEffect = selectedLayerId ? 'copy' : 'none';
+    e.dataTransfer.dropEffect = 'copy';
   };
 
   const onDragLeave = (e: DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
     if (e.currentTarget === e.target) {
-      setDragOver(false);
+      setDragOverLayerId(null);
     }
   };
 
-  const onDrop = (e: DragEvent) => {
+  const onDrop = (e: DragEvent, layerIdForDrop: string) => {
     e.preventDefault();
     e.stopPropagation();
-    setDragOver(false);
-    if (!selectedLayerId) return;
-    void handleIncomingFiles(e.dataTransfer.files);
+    setDragOverLayerId(null);
+    void handleIncomingFiles(layerIdForDrop, e.dataTransfer.files);
   };
 
   const onFileInputChange = (e: ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files.length > 0) {
-      void handleIncomingFiles(e.target.files);
+    const targetLayer = importLayerId;
+    if (e.target.files && e.target.files.length > 0 && targetLayer) {
+      void handleIncomingFiles(targetLayer, e.target.files);
     }
     e.target.value = '';
+    setImportLayerId(null);
   };
 
   return (
-    <aside
-      className={`layers-panel ${dragOver ? 'drag-over' : ''} ${importing ? 'importing' : ''}`}
-      onDragEnter={onDragEnter}
-      onDragOver={onDragOver}
-      onDragLeave={onDragLeave}
-      onDrop={onDrop}
-    >
+    <aside className={`components-panel ${importing ? 'importing' : ''}`}>
       <input
         ref={fileInputRef}
         type="file"
@@ -123,56 +135,66 @@ export function LayersPanel({
       />
 
       <div className="panel-header">
-        <h2>Layers</h2>
+        <h2>Prompt Components</h2>
         <button
           type="button"
           className="btn-icon"
-          title="Add layer"
+          title="Add component"
           onClick={() => setShowLayerModal(true)}
         >
           +
         </button>
       </div>
 
-      {dragOver && (
-        <div className="drop-overlay">
-          {selectedLayerId
-            ? 'Drop .md files here to import'
-            : 'Select a layer first, then drop files'}
-        </div>
-      )}
+      <ul className="component-list">
+        {layers.map((layer) => {
+          const files = layerFiles[layer.id] ?? [];
+          const isDragTarget = dragOverLayerId === layer.id;
 
-      <ul className="layer-list">
-        {layers.map((layer) => (
-          <li key={layer.id} className={selectedLayerId === layer.id ? 'active' : ''}>
-            <div className="layer-row">
-              <button
-                type="button"
-                className="layer-btn"
-                onClick={() => onSelectLayer(layer.id)}
-              >
-                <span className="layer-name">{layer.name}</span>
-                {layer.description && (
-                  <span className="layer-desc">{layer.description}</span>
-                )}
-              </button>
-              <button
-                type="button"
-                className="btn-icon btn-danger"
-                title="Delete layer"
-                onClick={() => onDeleteLayer(layer.id)}
-              >
-                ×
-              </button>
-            </div>
-            {selectedLayerId === layer.id && (
+          return (
+            <li
+              key={layer.id}
+              className={`component-group ${isDragTarget ? 'drag-over' : ''}`}
+              onDragEnter={(e) => onDragEnter(e, layer.id)}
+              onDragOver={onDragOver}
+              onDragLeave={onDragLeave}
+              onDrop={(e) => onDrop(e, layer.id)}
+            >
+              <div className="component-header">
+                <div className="component-title">
+                  <span className="component-name">{getLayerDisplayName(layer)}</span>
+                  {layer.description && (
+                    <span className="component-desc">{layer.description}</span>
+                  )}
+                </div>
+                <button
+                  type="button"
+                  className="btn-icon btn-danger"
+                  title="Delete component"
+                  onClick={() => onDeleteLayer(layer.id)}
+                >
+                  ×
+                </button>
+              </div>
+
+              {isDragTarget && (
+                <div className="drop-hint">Drop .md files here to import</div>
+              )}
+
               <ul className="file-list">
                 {files.map((file) => (
-                  <li key={file} className={selectedFile === file ? 'active' : ''}>
+                  <li
+                    key={file}
+                    className={
+                      selectedLayerId === layer.id && selectedFile === file
+                        ? 'active'
+                        : ''
+                    }
+                  >
                     <button
                       type="button"
                       className="file-btn"
-                      onClick={() => onSelectFile(file)}
+                      onClick={() => onSelectFile(layer.id, file)}
                     >
                       {file}
                     </button>
@@ -180,7 +202,7 @@ export function LayersPanel({
                       type="button"
                       className="btn-icon btn-danger"
                       title="Delete file"
-                      onClick={() => onDeleteFile(file)}
+                      onClick={() => onDeleteFile(layer.id, file)}
                     >
                       ×
                     </button>
@@ -190,7 +212,7 @@ export function LayersPanel({
                   <button
                     type="button"
                     className="add-file-btn"
-                    onClick={() => setShowFileModal(true)}
+                    onClick={() => openFileModal(layer.id)}
                   >
                     + New file
                   </button>
@@ -198,35 +220,38 @@ export function LayersPanel({
                     type="button"
                     className="add-file-btn import-file-btn"
                     disabled={importing}
-                    onClick={() => fileInputRef.current?.click()}
+                    onClick={() => {
+                      setImportLayerId(layer.id);
+                      fileInputRef.current?.click();
+                    }}
                   >
                     Import files…
                   </button>
                 </li>
               </ul>
-            )}
-          </li>
-        ))}
+            </li>
+          );
+        })}
       </ul>
 
       {showLayerModal && (
         <div className="modal-overlay" onClick={() => setShowLayerModal(false)}>
           <div className="modal" onClick={(e) => e.stopPropagation()}>
-            <h3>New Layer</h3>
+            <h3>New Component</h3>
             <label>
-              ID (lowercase)
+              ID (lowercase, internal)
               <input
                 value={layerId}
                 onChange={(e) => setLayerId(e.target.value)}
-                placeholder="e.g. persona"
+                placeholder="e.g. worldview"
               />
             </label>
             <label>
-              Name
+              Display name
               <input
-                value={layerName}
-                onChange={(e) => setLayerName(e.target.value)}
-                placeholder="e.g. Persona"
+                value={layerDisplayName}
+                onChange={(e) => setLayerDisplayName(e.target.value)}
+                placeholder="e.g. 🌍 世界観"
               />
             </label>
             <label>
@@ -241,7 +266,11 @@ export function LayersPanel({
               <button type="button" onClick={() => setShowLayerModal(false)}>
                 Cancel
               </button>
-              <button type="button" className="btn-primary" onClick={handleCreateLayer}>
+              <button
+                type="button"
+                className="btn-primary"
+                onClick={() => void handleCreateLayer()}
+              >
                 Create
               </button>
             </div>
@@ -265,7 +294,11 @@ export function LayersPanel({
               <button type="button" onClick={() => setShowFileModal(false)}>
                 Cancel
               </button>
-              <button type="button" className="btn-primary" onClick={handleCreateFile}>
+              <button
+                type="button"
+                className="btn-primary"
+                onClick={() => void handleCreateFile()}
+              >
                 Create
               </button>
             </div>

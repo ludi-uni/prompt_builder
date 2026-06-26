@@ -4,10 +4,30 @@ from app.config import LAYERS_DIR
 from app.models import LayerMeta, LayersConfig
 
 DEFAULT_LAYERS: list[LayerMeta] = [
-    LayerMeta(id="system", name="System", description="System Prompt"),
-    LayerMeta(id="persona", name="Persona", description="Character"),
-    LayerMeta(id="memory", name="Memory", description="Long-term memory context"),
-    LayerMeta(id="style", name="Style", description="Output style"),
+    LayerMeta(
+        id="system",
+        name="System",
+        display_name="🛡️ 安全性",
+        description="システム制約",
+    ),
+    LayerMeta(
+        id="persona",
+        name="Persona",
+        display_name="🧠 人格",
+        description="基本人格",
+    ),
+    LayerMeta(
+        id="memory",
+        name="Memory",
+        display_name="📚 記憶",
+        description="長期記憶",
+    ),
+    LayerMeta(
+        id="style",
+        name="Style",
+        display_name="💬 話し方",
+        description="口調・会話",
+    ),
 ]
 
 DEFAULT_MARKDOWN: dict[str, dict[str, str]] = {

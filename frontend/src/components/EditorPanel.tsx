@@ -1,35 +1,53 @@
 import { useCallback, useEffect } from 'react';
 import Editor from '@monaco-editor/react';
 import { MarkdownView } from './MarkdownView';
+import type { SaveStatus } from '../hooks/useAutoSave';
 import './EditorPanel.css';
 
 interface EditorPanelProps {
   filename: string | null;
   content: string;
-  dirty: boolean;
+  saveStatus: SaveStatus;
   onChange: (content: string) => void;
-  onSave: () => Promise<void>;
+  onFlushSave: () => Promise<boolean>;
   tab: 'edit' | 'preview';
   onTabChange: (tab: 'edit' | 'preview') => void;
+}
+
+function saveStatusLabel(status: SaveStatus): string | null {
+  switch (status) {
+    case 'pending':
+      return 'Saving…';
+    case 'saving':
+      return 'Saving…';
+    case 'saved':
+      return 'Saved';
+    case 'error':
+      return 'Save failed';
+    default:
+      return null;
+  }
 }
 
 export function EditorPanel({
   filename,
   content,
-  dirty,
+  saveStatus,
   onChange,
-  onSave,
+  onFlushSave,
   tab,
   onTabChange,
 }: EditorPanelProps) {
+  const statusLabel = saveStatusLabel(saveStatus);
+
   const handleKeyDown = useCallback(
     (e: KeyboardEvent) => {
       if ((e.ctrlKey || e.metaKey) && e.key === 's') {
         e.preventDefault();
-        if (filename && dirty) void onSave();
+        if (filename) void onFlushSave();
       }
     },
-    [filename, dirty, onSave],
+    [filename, onFlushSave],
   );
 
   useEffect(() => {
@@ -40,7 +58,7 @@ export function EditorPanel({
   if (!filename) {
     return (
       <section className="editor-panel empty">
-        <p>Select a file from the layers panel to edit.</p>
+        <p>Select a prompt component file to edit.</p>
       </section>
     );
   }
@@ -50,7 +68,13 @@ export function EditorPanel({
       <div className="editor-header">
         <div className="editor-title">
           <span className="filename">{filename}</span>
-          {dirty && <span className="dirty-badge">unsaved</span>}
+          {statusLabel && (
+            <span
+              className={`save-status ${saveStatus === 'error' ? 'save-status-error' : ''}`}
+            >
+              {statusLabel}
+            </span>
+          )}
         </div>
         <div className="editor-tabs">
           <button
@@ -66,14 +90,6 @@ export function EditorPanel({
             onClick={() => onTabChange('preview')}
           >
             Preview
-          </button>
-          <button
-            type="button"
-            className="btn-save"
-            disabled={!dirty}
-            onClick={() => void onSave()}
-          >
-            Save
           </button>
         </div>
       </div>
