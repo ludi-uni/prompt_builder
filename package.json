@@ -1,0 +1,18 @@
+{
+  "name": "prompt-studio",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Layer-based prompt IDE",
+  "scripts": {
+    "setup": "node scripts/run.mjs setup",
+    "dev": "node scripts/dev.mjs",
+    "dev:api": "node scripts/run.mjs dev-backend",
+    "dev:web": "node scripts/run.mjs dev-frontend",
+    "test": "node scripts/run.mjs test",
+    "build": "npm run build --prefix frontend",
+    "lint": "npm run lint --prefix frontend"
+  },
+  "devDependencies": {
+    "concurrently": "^9.2.1"
+  }
+}

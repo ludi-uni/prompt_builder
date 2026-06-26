@@ -1,0 +1,16 @@
+name: AITuber
+
+build:
+  - layer: system
+    prompts:
+      - role.md
+      - safety.md
+
+  - layer: persona
+    prompts:
+      - identity.md
+      - speech.md
+
+  - layer: style
+    prompts:
+      - concise.md

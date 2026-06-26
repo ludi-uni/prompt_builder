@@ -1,0 +1,11 @@
+name: API
+
+build:
+  - layer: system
+    prompts:
+      - role.md
+      - safety.md
+
+  - layer: style
+    prompts:
+      - concise.md

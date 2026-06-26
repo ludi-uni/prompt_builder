@@ -1,0 +1,24 @@
+.app {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  overflow: hidden;
+}
+
+.main-layout {
+  display: grid;
+  grid-template-columns: 260px 1fr 1fr;
+  flex: 1;
+  overflow: hidden;
+}
+
+@media (max-width: 1024px) {
+  .main-layout {
+    grid-template-columns: 220px 1fr;
+    grid-template-rows: 1fr 1fr;
+  }
+
+  .main-layout > :last-child {
+    grid-column: 1 / -1;
+  }
+}

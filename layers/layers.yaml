@@ -1,0 +1,13 @@
+layers:
+- id: system
+  name: System
+  description: System Prompt
+- id: persona
+  name: Persona
+  description: Character
+- id: memory
+  name: Memory
+  description: Long-term memory context
+- id: style
+  name: Style
+  description: Output style

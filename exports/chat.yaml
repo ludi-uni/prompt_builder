@@ -1,0 +1,12 @@
+name: Chat
+
+build:
+  - layer: system
+    prompts:
+      - role.md
+      - safety.md
+
+  - layer: persona
+    prompts:
+      - identity.md
+      - speech.md

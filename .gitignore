@@ -1,0 +1,28 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# Node
+node_modules/
+frontend/node_modules/
+dist/
+frontend/dist/
+
+# Workspace outputs
+workspace/generated_prompt.md
+workspace/preview.md
+workspace/logs/
+workspace/temp/
+
+# Config (local)
+config/llm.yaml
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
