@@ -10,7 +10,13 @@
     "dev:web": "node scripts/run.mjs dev-frontend",
     "test": "node scripts/run.mjs test",
     "build": "npm run build --prefix frontend",
-    "lint": "npm run lint --prefix frontend"
+    "lint": "npm run lint:web && node scripts/run.mjs lint",
+    "lint:web": "npm run lint --prefix frontend",
+    "lint:api": "node scripts/run.mjs lint",
+    "format": "npm run format:web && node scripts/run.mjs format",
+    "format:web": "npm run format --prefix frontend",
+    "format:api": "node scripts/run.mjs format",
+    "format:check": "npm run format:check --prefix frontend && node scripts/run.mjs format-check"
   },
   "devDependencies": {
     "concurrently": "^9.2.1"

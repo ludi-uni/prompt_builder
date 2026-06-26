@@ -18,7 +18,13 @@
 | `npm run dev:web` | Frontend のみ起動 |
 | `npm run test` | Backend テスト実行 |
 | `npm run build` | Frontend 本番ビルド |
-| `npm run lint` | Frontend Lint |
+| `npm run lint` | Frontend + Backend Lint |
+| `npm run lint:web` | Frontend Lint（oxlint） |
+| `npm run lint:api` | Backend Lint（ruff） |
+| `npm run format` | Frontend + Backend フォーマット |
+| `npm run format:web` | Frontend フォーマット（oxfmt） |
+| `npm run format:api` | Backend フォーマット（ruff） |
+| `npm run format:check` | フォーマット差分チェック（CI 向け） |
 
 ### 初回
 

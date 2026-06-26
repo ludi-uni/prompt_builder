@@ -1,8 +1,10 @@
-import pytest
 from fastapi.testclient import TestClient
 
 from app.main import app
-from app.services.bootstrap import ensure_layers_initialized, initialize_layers, is_layers_empty
+from app.services.bootstrap import (
+    ensure_layers_initialized,
+    is_layers_empty,
+)
 from app.services.prompt_builder import build_prompt
 
 client = TestClient(app)

@@ -1,27 +1,29 @@
-import { useState } from 'react'
-import type { LLMConfig } from '../api/client'
-import './LLMSettingsModal.css'
+import { useState } from 'react';
+import type { LLMConfig } from '../api/client';
+import './LLMSettingsModal.css';
 
 interface LLMSettingsModalProps {
-  config: LLMConfig | null
-  onSave: (config: LLMConfig) => Promise<void>
-  onClose: () => void
+  config: LLMConfig | null;
+  onSave: (config: LLMConfig) => Promise<void>;
+  onClose: () => void;
 }
 
 export function LLMSettingsModal({ config, onSave, onClose }: LLMSettingsModalProps) {
-  const [serverUrl, setServerUrl] = useState(config?.server_url ?? 'http://127.0.0.1:8080')
-  const [timeout, setTimeout] = useState(config?.timeout_seconds ?? 120)
-  const [saving, setSaving] = useState(false)
+  const [serverUrl, setServerUrl] = useState(
+    config?.server_url ?? 'http://127.0.0.1:8080',
+  );
+  const [timeout, setTimeout] = useState(config?.timeout_seconds ?? 120);
+  const [saving, setSaving] = useState(false);
 
   const handleSave = async () => {
-    setSaving(true)
+    setSaving(true);
     try {
-      await onSave({ server_url: serverUrl, timeout_seconds: timeout })
-      onClose()
+      await onSave({ server_url: serverUrl, timeout_seconds: timeout });
+      onClose();
     } finally {
-      setSaving(false)
+      setSaving(false);
     }
-  }
+  };
 
   return (
     <div className="modal-overlay" onClick={onClose}>
@@ -49,12 +51,19 @@ export function LLMSettingsModal({ config, onSave, onClose }: LLMSettingsModalPr
           />
         </label>
         <div className="modal-actions">
-          <button type="button" onClick={onClose}>Cancel</button>
-          <button type="button" className="btn-primary" disabled={saving} onClick={() => void handleSave()}>
+          <button type="button" onClick={onClose}>
+            Cancel
+          </button>
+          <button
+            type="button"
+            className="btn-primary"
+            disabled={saving}
+            onClick={() => void handleSave()}
+          >
             Save
           </button>
         </div>
       </div>
     </div>
-  )
+  );
 }

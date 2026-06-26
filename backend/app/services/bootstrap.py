@@ -1,5 +1,3 @@
-from pathlib import Path
-
 import yaml
 
 from app.config import LAYERS_DIR

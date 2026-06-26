@@ -1,0 +1,10 @@
+$ErrorActionPreference = "Stop"
+$Root = Split-Path -Parent $PSScriptRoot
+Set-Location $Root
+
+if (-not (Test-Path ".venv\Scripts\ruff.exe")) {
+    Write-Error "Virtualenv not found. Run: npm run setup"
+}
+
+& .\.venv\Scripts\ruff check --fix backend
+& .\.venv\Scripts\ruff format backend

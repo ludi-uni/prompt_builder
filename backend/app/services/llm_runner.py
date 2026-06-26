@@ -65,12 +65,16 @@ class LlamaServerRunner:
                 detail=f"llama-server error: {exc.response.text}",
             ) from exc
         except httpx.TimeoutException as exc:
-            raise HTTPException(status_code=504, detail="llama-server request timed out") from exc
+            raise HTTPException(
+                status_code=504, detail="llama-server request timed out"
+            ) from exc
 
         try:
             return data["choices"][0]["message"]["content"]
         except (KeyError, IndexError, TypeError) as exc:
-            raise HTTPException(status_code=502, detail="Unexpected llama-server response") from exc
+            raise HTTPException(
+                status_code=502, detail="Unexpected llama-server response"
+            ) from exc
 
 
 async def run_llm_test(prompt: str) -> LLMTestResponse:

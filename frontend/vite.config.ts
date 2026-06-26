@@ -1,7 +1,7 @@
-import { defineConfig } from 'vite'
-import react from '@vitejs/plugin-react'
+import { defineConfig } from 'vite';
+import react from '@vitejs/plugin-react';
 
-const apiPort = process.env.PROMPT_STUDIO_API_PORT ?? '61000'
+const apiPort = process.env.PROMPT_STUDIO_API_PORT ?? '61000';
 
 export default defineConfig({
   plugins: [react()],
@@ -13,4 +13,4 @@ export default defineConfig({
       },
     },
   },
-})
+});

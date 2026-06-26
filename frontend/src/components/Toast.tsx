@@ -1,13 +1,13 @@
-import './Toast.css'
+import './Toast.css';
 
 interface ToastProps {
-  message: string | null
-  type?: 'error' | 'success' | 'info'
-  onDismiss: () => void
+  message: string | null;
+  type?: 'error' | 'success' | 'info';
+  onDismiss: () => void;
 }
 
 export function Toast({ message, type = 'info', onDismiss }: ToastProps) {
-  if (!message) return null
+  if (!message) return null;
 
   return (
     <div className={`toast toast-${type}`} role="alert">
@@ -16,5 +16,5 @@ export function Toast({ message, type = 'info', onDismiss }: ToastProps) {
         ×
       </button>
     </div>
-  )
+  );
 }

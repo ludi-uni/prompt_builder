@@ -1,15 +1,15 @@
-import type { ExportItem } from '../api/client'
-import './Toolbar.css'
+import type { ExportItem } from '../api/client';
+import './Toolbar.css';
 
 interface ToolbarProps {
-  exports: ExportItem[]
-  selectedExport: string | null
-  onExportChange: (exportId: string) => void
-  onExportPrompt: () => void
-  onRunTest: () => void
-  onOpenLLMSettings: () => void
-  llmConfigured: boolean
-  busy: boolean
+  exports: ExportItem[];
+  selectedExport: string | null;
+  onExportChange: (exportId: string) => void;
+  onExportPrompt: () => void;
+  onRunTest: () => void;
+  onOpenLLMSettings: () => void;
+  llmConfigured: boolean;
+  busy: boolean;
 }
 
 export function Toolbar({
@@ -48,13 +48,23 @@ export function Toolbar({
         <button type="button" className="btn-secondary" onClick={onOpenLLMSettings}>
           LLM {llmConfigured ? '✓' : '○'}
         </button>
-        <button type="button" className="btn-secondary" onClick={onRunTest} disabled={busy || !selectedExport}>
+        <button
+          type="button"
+          className="btn-secondary"
+          onClick={onRunTest}
+          disabled={busy || !selectedExport}
+        >
           Run Test
         </button>
-        <button type="button" className="btn-primary" onClick={onExportPrompt} disabled={busy || !selectedExport}>
+        <button
+          type="button"
+          className="btn-primary"
+          onClick={onExportPrompt}
+          disabled={busy || !selectedExport}
+        >
           Export Prompt
         </button>
       </div>
     </header>
-  )
+  );
 }

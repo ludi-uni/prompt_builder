@@ -13,6 +13,9 @@ const tasks = {
   'dev-backend': isWin ? 'dev-backend.ps1' : 'dev-backend.sh',
   'dev-frontend': isWin ? 'dev-frontend.ps1' : 'dev-frontend.sh',
   test: isWin ? 'test.ps1' : 'test.sh',
+  lint: isWin ? 'lint.ps1' : 'lint.sh',
+  format: isWin ? 'format.ps1' : 'format.sh',
+  'format-check': isWin ? 'format-check.ps1' : 'format-check.sh',
 }
 
 const script = tasks[task]

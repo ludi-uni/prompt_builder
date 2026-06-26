@@ -1,5 +1,3 @@
-from pathlib import Path
-
 from fastapi import HTTPException
 
 from app.config import LAYERS_DIR, PROMPT_SEPARATOR

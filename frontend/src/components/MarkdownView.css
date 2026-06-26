@@ -11,9 +11,15 @@
   line-height: 1.3;
 }
 
-.markdown-view h1 { font-size: 1.5em; }
-.markdown-view h2 { font-size: 1.25em; }
-.markdown-view h3 { font-size: 1.1em; }
+.markdown-view h1 {
+  font-size: 1.5em;
+}
+.markdown-view h2 {
+  font-size: 1.25em;
+}
+.markdown-view h3 {
+  font-size: 1.1em;
+}
 
 .markdown-view p {
   margin: 0.5em 0;

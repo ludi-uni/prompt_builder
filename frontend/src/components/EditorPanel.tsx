@@ -1,16 +1,16 @@
-import { useCallback, useEffect } from 'react'
-import Editor from '@monaco-editor/react'
-import { MarkdownView } from './MarkdownView'
-import './EditorPanel.css'
+import { useCallback, useEffect } from 'react';
+import Editor from '@monaco-editor/react';
+import { MarkdownView } from './MarkdownView';
+import './EditorPanel.css';
 
 interface EditorPanelProps {
-  filename: string | null
-  content: string
-  dirty: boolean
-  onChange: (content: string) => void
-  onSave: () => Promise<void>
-  tab: 'edit' | 'preview'
-  onTabChange: (tab: 'edit' | 'preview') => void
+  filename: string | null;
+  content: string;
+  dirty: boolean;
+  onChange: (content: string) => void;
+  onSave: () => Promise<void>;
+  tab: 'edit' | 'preview';
+  onTabChange: (tab: 'edit' | 'preview') => void;
 }
 
 export function EditorPanel({
@@ -25,24 +25,24 @@ export function EditorPanel({
   const handleKeyDown = useCallback(
     (e: KeyboardEvent) => {
       if ((e.ctrlKey || e.metaKey) && e.key === 's') {
-        e.preventDefault()
-        if (filename && dirty) void onSave()
+        e.preventDefault();
+        if (filename && dirty) void onSave();
       }
     },
     [filename, dirty, onSave],
-  )
+  );
 
   useEffect(() => {
-    window.addEventListener('keydown', handleKeyDown)
-    return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [handleKeyDown])
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [handleKeyDown]);
 
   if (!filename) {
     return (
       <section className="editor-panel empty">
         <p>Select a file from the layers panel to edit.</p>
       </section>
-    )
+    );
   }
 
   return (
@@ -101,5 +101,5 @@ export function EditorPanel({
         )}
       </div>
     </section>
-  )
+  );
 }

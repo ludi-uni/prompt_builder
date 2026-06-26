@@ -1,36 +1,36 @@
 export interface LayerMeta {
-  id: string
-  name: string
-  description?: string
+  id: string;
+  name: string;
+  description?: string;
 }
 
 export interface ExportItem {
-  id: string
-  name: string
+  id: string;
+  name: string;
 }
 
 export interface LLMConfig {
-  server_url: string
-  timeout_seconds: number
+  server_url: string;
+  timeout_seconds: number;
 }
 
 async function request<T>(url: string, init?: RequestInit): Promise<T> {
   const response = await fetch(url, {
     headers: { 'Content-Type': 'application/json', ...init?.headers },
     ...init,
-  })
+  });
   if (!response.ok) {
-    let detail = response.statusText
+    let detail = response.statusText;
     try {
-      const body = await response.json()
-      detail = body.detail ?? JSON.stringify(body)
+      const body = await response.json();
+      detail = body.detail ?? JSON.stringify(body);
     } catch {
       // ignore
     }
-    throw new Error(typeof detail === 'string' ? detail : JSON.stringify(detail))
+    throw new Error(typeof detail === 'string' ? detail : JSON.stringify(detail));
   }
-  if (response.status === 204) return undefined as T
-  return response.json() as Promise<T>
+  if (response.status === 204) return undefined as T;
+  return response.json() as Promise<T>;
 }
 
 export const api = {
@@ -40,7 +40,9 @@ export const api = {
   createLayer: (body: { id: string; name: string; description?: string }) =>
     request<LayerMeta>('/api/layers', { method: 'POST', body: JSON.stringify(body) }),
   deleteLayer: (id: string, force = false) =>
-    request<{ deleted: string }>(`/api/layers/${id}?force=${force}`, { method: 'DELETE' }),
+    request<{ deleted: string }>(`/api/layers/${id}?force=${force}`, {
+      method: 'DELETE',
+    }),
 
   listFiles: (layerId: string) =>
     request<{ files: string[] }>(`/api/layers/${layerId}/files`),
@@ -89,4 +91,4 @@ export const api = {
       method: 'POST',
       body: JSON.stringify({ prompt }),
     }),
-}
+};

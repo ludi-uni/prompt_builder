@@ -1,5 +1,3 @@
-from pathlib import Path
-
 import yaml
 from fastapi import HTTPException
 

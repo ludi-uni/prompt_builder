@@ -5,12 +5,8 @@ from app.models import (
     LayerCreate,
     LayerMeta,
     LayerUpdate,
-    LLMConfig,
-    LLMTestRequest,
 )
-from app.services.llm_runner import load_llm_config, run_llm_test, save_llm_config
 from app.services.paths import normalize_filename, resolve_layer_dir, resolve_layer_file
-from app.services.prompt_builder import build_prompt
 from app.services.yaml_loader import load_layers_config, save_layers_config
 
 router = APIRouter(prefix="/api/layers", tags=["layers"])
@@ -43,7 +39,11 @@ def update_layer(layer_id: str, body: LayerUpdate) -> LayerMeta:
     for i, layer in enumerate(config.layers):
         if layer.id == layer_id:
             updated = layer.model_copy(
-                update={k: v for k, v in body.model_dump(exclude_unset=True).items() if v is not None}
+                update={
+                    k: v
+                    for k, v in body.model_dump(exclude_unset=True).items()
+                    if v is not None
+                }
             )
             config.layers[i] = updated
             save_layers_config(config)

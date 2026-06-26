@@ -1,13 +1,13 @@
-import { MarkdownView } from './MarkdownView'
-import './PreviewPanel.css'
+import { MarkdownView } from './MarkdownView';
+import './PreviewPanel.css';
 
 interface PreviewPanelProps {
-  prompt: string
-  loading: boolean
-  mode: 'rendered' | 'raw'
-  onModeChange: (mode: 'rendered' | 'raw') => void
-  llmResponse: string | null
-  llmLoading: boolean
+  prompt: string;
+  loading: boolean;
+  mode: 'rendered' | 'raw';
+  onModeChange: (mode: 'rendered' | 'raw') => void;
+  llmResponse: string | null;
+  llmLoading: boolean;
 }
 
 export function PreviewPanel({
@@ -45,9 +45,13 @@ export function PreviewPanel({
         {loading ? (
           <p className="loading-text">Building prompt...</p>
         ) : mode === 'rendered' ? (
-          <MarkdownView content={prompt || '_No export selected or prompt is empty._'} />
+          <MarkdownView
+            content={prompt || '_No export selected or prompt is empty._'}
+          />
         ) : (
-          <pre className="raw-prompt">{prompt || 'No export selected or prompt is empty.'}</pre>
+          <pre className="raw-prompt">
+            {prompt || 'No export selected or prompt is empty.'}
+          </pre>
         )}
 
         {(llmResponse || llmLoading) && (
@@ -62,5 +66,5 @@ export function PreviewPanel({
         )}
       </div>
     </section>
-  )
+  );
 }
