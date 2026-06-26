@@ -2,9 +2,10 @@ from fastapi import APIRouter
 from fastapi.responses import PlainTextResponse
 
 from app.config import WORKSPACE_DIR
+from app.models import ExportConfig
 from app.services.git_baseline import get_git_baseline
 from app.services.prompt_builder import build_prompt
-from app.services.yaml_loader import list_exports, load_export
+from app.services.yaml_loader import list_exports, load_export, save_export
 
 router = APIRouter(prefix="/api/exports", tags=["exports"])
 
@@ -23,6 +24,13 @@ def get_exports() -> dict:
 def get_export(export_name: str) -> dict:
     export = load_export(export_name)
     return export.model_dump()
+
+
+@router.put("/{export_name}")
+def update_export(export_name: str, body: ExportConfig) -> dict:
+    load_export(export_name)
+    saved = save_export(export_name, body)
+    return saved.model_dump()
 
 
 @router.get("/{export_name}/build")

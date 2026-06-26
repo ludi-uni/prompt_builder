@@ -7,6 +7,8 @@ import {
 import { withRetry } from './utils/retry';
 import {
   api,
+  type BuildStep,
+  type ExportConfig,
   type ExportItem,
   type LayerMeta,
   type LLMConfig,
@@ -22,6 +24,7 @@ import { Toolbar } from './components/Toolbar';
 import { useAutoSave } from './hooks/useAutoSave';
 import { useLayoutMode } from './hooks/useLayoutMode';
 import { getLayerDisplayName } from './utils/displayName';
+import { appendFileToBuild, removeFileFromBuild } from './utils/exportBuild';
 import './App.css';
 
 async function fetchAllLayerFiles(
@@ -45,6 +48,7 @@ function App() {
   const [content, setContent] = useState('');
   const [savedContent, setSavedContent] = useState('');
   const [selectedExport, setSelectedExport] = useState<string | null>(null);
+  const [exportConfig, setExportConfig] = useState<ExportConfig | null>(null);
   const [builtPrompt, setBuiltPrompt] = useState('');
   const [previousPrompt, setPreviousPrompt] = useState('');
   const [previewMode, setPreviewMode] = useState<'rendered' | 'raw'>('rendered');
@@ -84,6 +88,22 @@ function App() {
       showToast(err instanceof Error ? err.message : fallback, 'error');
     },
     [showToast],
+  );
+
+  const loadExportConfig = useCallback(
+    async (exportId: string | null) => {
+      if (!exportId) {
+        setExportConfig(null);
+        return;
+      }
+      try {
+        const config = await api.getExport(exportId);
+        setExportConfig(config);
+      } catch (err) {
+        handleError(err, 'Failed to load mode configuration');
+      }
+    },
+    [handleError],
   );
 
   const refreshPrompt = useCallback(
@@ -164,12 +184,19 @@ function App() {
       if (exportsRes.exports.length > 0) {
         const firstExport = exportsRes.exports[0].id;
         setSelectedExport(firstExport);
+        await loadExportConfig(firstExport);
         await refreshPrompt(firstExport);
       }
     } catch (err) {
       handleError(err, 'Failed to load data');
     }
-  }, [handleError, refreshPrompt, refreshLLMHealth, refreshLayerFiles]);
+  }, [
+    handleError,
+    refreshPrompt,
+    refreshLLMHealth,
+    refreshLayerFiles,
+    loadExportConfig,
+  ]);
 
   useEffect(() => {
     void loadInitial();
@@ -216,12 +243,37 @@ function App() {
     }
   };
 
+  const handleUpdateExportBuild = useCallback(
+    async (build: BuildStep[]) => {
+      if (!selectedExport || !exportConfig) return;
+      const nextConfig: ExportConfig = { ...exportConfig, build };
+      try {
+        const saved = await api.updateExport(selectedExport, nextConfig);
+        setExportConfig(saved);
+        await refreshPrompt(selectedExport);
+      } catch (err) {
+        handleError(err, 'Failed to update prompt order');
+      }
+    },
+    [selectedExport, exportConfig, refreshPrompt, handleError],
+  );
+
   const handleCreateFile = async (layerId: string, filename: string) => {
     try {
       const result = await api.createFile(layerId, filename);
+      if (selectedExport && exportConfig) {
+        const nextBuild = appendFileToBuild(
+          exportConfig.build,
+          layerId,
+          result.filename,
+        );
+        await api.updateExport(selectedExport, { ...exportConfig, build: nextBuild });
+        setExportConfig((prev) => (prev ? { ...prev, build: nextBuild } : prev));
+      }
       const layersRes = await api.listLayers();
       await refreshLayerFiles(layersRes.layers);
       await handleSelectFile(layerId, result.filename, false);
+      await refreshPrompt(selectedExport);
       showToast(`File "${result.filename}" created`, 'success');
     } catch (err) {
       handleError(err, 'Failed to create file');
@@ -239,6 +291,7 @@ function App() {
     let imported = 0;
     let skipped = 0;
     let lastImported: string | null = null;
+    let nextBuild = exportConfig?.build;
 
     for (const file of importable) {
       let filename: string;
@@ -264,6 +317,9 @@ function App() {
           content: fileContent,
           overwrite: exists,
         });
+        if (nextBuild && !exists) {
+          nextBuild = appendFileToBuild(nextBuild, layerId, filename);
+        }
         imported += 1;
         lastImported = filename;
       } catch (err) {
@@ -277,6 +333,11 @@ function App() {
         showToast('No files were imported', 'info');
       }
       return;
+    }
+
+    if (selectedExport && exportConfig && nextBuild) {
+      await api.updateExport(selectedExport, { ...exportConfig, build: nextBuild });
+      setExportConfig({ ...exportConfig, build: nextBuild });
     }
 
     const layersRes = await api.listLayers();
@@ -297,6 +358,11 @@ function App() {
     if (!window.confirm(`Delete ${filename}?`)) return;
     try {
       await api.deleteFile(layerId, filename);
+      if (selectedExport && exportConfig) {
+        const nextBuild = removeFileFromBuild(exportConfig.build, layerId, filename);
+        await api.updateExport(selectedExport, { ...exportConfig, build: nextBuild });
+        setExportConfig((prev) => (prev ? { ...prev, build: nextBuild } : prev));
+      }
       const layersRes = await api.listLayers();
       await refreshLayerFiles(layersRes.layers);
       if (selectedLayerId === layerId && selectedFile === filename) {
@@ -357,6 +423,7 @@ function App() {
     setSelectedExport(exportId);
     setLLMResponse(null);
     setLLMUsage(null);
+    await loadExportConfig(exportId);
     await refreshPrompt(exportId);
   };
 
@@ -450,9 +517,12 @@ function App() {
             <ComponentsPanel
               layers={layers}
               layerFiles={layerFiles}
+              buildSteps={exportConfig?.build ?? []}
+              canReorder={Boolean(selectedExport && exportConfig)}
               selectedLayerId={selectedLayerId}
               selectedFile={selectedFile}
               onSelectFile={(layerId, file) => void handleSelectFile(layerId, file)}
+              onReorderBuild={(build) => void handleUpdateExportBuild(build)}
               onCreateLayer={handleCreateLayer}
               onCreateFile={handleCreateFile}
               onImportFiles={handleImportFiles}

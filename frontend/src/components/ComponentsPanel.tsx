@@ -1,15 +1,23 @@
 import { useRef, useState, type ChangeEvent, type DragEvent } from 'react';
-import type { LayerMeta } from '../api/client';
+import type { BuildStep, LayerMeta } from '../api/client';
 import { collectImportableFiles } from '../utils/markdownFiles';
 import { getLayerDisplayName } from '../utils/displayName';
+import {
+  moveItem,
+  orderedFilesForLayer,
+  orderedLayersForBuild,
+} from '../utils/exportBuild';
 import './ComponentsPanel.css';
 
 interface ComponentsPanelProps {
   layers: LayerMeta[];
   layerFiles: Record<string, string[]>;
+  buildSteps: BuildStep[];
+  canReorder: boolean;
   selectedLayerId: string | null;
   selectedFile: string | null;
   onSelectFile: (layerId: string, filename: string) => void;
+  onReorderBuild: (build: BuildStep[]) => void;
   onCreateLayer: (
     id: string,
     name: string,
@@ -25,9 +33,12 @@ interface ComponentsPanelProps {
 export function ComponentsPanel({
   layers,
   layerFiles,
+  buildSteps,
+  canReorder,
   selectedLayerId,
   selectedFile,
   onSelectFile,
+  onReorderBuild,
   onCreateLayer,
   onCreateFile,
   onImportFiles,
@@ -45,6 +56,38 @@ export function ComponentsPanel({
   const [dragOverLayerId, setDragOverLayerId] = useState<string | null>(null);
   const [importing, setImporting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const orderedLayers = orderedLayersForBuild(layers, buildSteps);
+
+  const moveLayer = (layerIdToMove: string, direction: 'up' | 'down') => {
+    const index = buildSteps.findIndex((step) => step.layer === layerIdToMove);
+    if (index < 0) return;
+    const target = direction === 'up' ? index - 1 : index + 1;
+    onReorderBuild(moveItem(buildSteps, index, target));
+  };
+
+  const moveFile = (
+    layerIdForFile: string,
+    filename: string,
+    direction: 'up' | 'down',
+  ) => {
+    const stepIndex = buildSteps.findIndex((step) => step.layer === layerIdForFile);
+    if (stepIndex < 0) return;
+    const step = buildSteps[stepIndex];
+    const fileIndex = step.prompts.indexOf(filename);
+    if (fileIndex < 0) return;
+    const target = direction === 'up' ? fileIndex - 1 : fileIndex + 1;
+    const nextPrompts = moveItem(step.prompts, fileIndex, target);
+    const nextBuild = buildSteps.map((s, i) =>
+      i === stepIndex ? { ...s, prompts: nextPrompts } : s,
+    );
+    onReorderBuild(nextBuild);
+  };
+
+  const isFileInBuild = (layerIdForFile: string, filename: string) => {
+    const step = buildSteps.find((s) => s.layer === layerIdForFile);
+    return step?.prompts.includes(filename) ?? false;
+  };
 
   const handleCreateLayer = async () => {
     if (!layerId.trim() || !layerDisplayName.trim()) return;
@@ -135,7 +178,10 @@ export function ComponentsPanel({
       />
 
       <div className="panel-header">
-        <h2>Prompt Components</h2>
+        <div>
+          <h2>Prompt Components</h2>
+          {canReorder && <p className="panel-hint">↑↓ で現在の Mode の結合順を変更</p>}
+        </div>
         <button
           type="button"
           className="btn-icon"
@@ -147,9 +193,15 @@ export function ComponentsPanel({
       </div>
 
       <ul className="component-list">
-        {layers.map((layer) => {
-          const files = layerFiles[layer.id] ?? [];
+        {orderedLayers.map((layer) => {
+          const layerMeta = layers.find((l) => l.id === layer.id);
+          if (!layerMeta) return null;
+
+          const allFiles = layerFiles[layer.id] ?? [];
+          const files = orderedFilesForLayer(layer.id, allFiles, buildSteps);
           const isDragTarget = dragOverLayerId === layer.id;
+          const buildIndex = buildSteps.findIndex((step) => step.layer === layer.id);
+          const inBuild = buildIndex >= 0;
 
           return (
             <li
@@ -161,10 +213,37 @@ export function ComponentsPanel({
               onDrop={(e) => onDrop(e, layer.id)}
             >
               <div className="component-header">
+                {canReorder && inBuild && (
+                  <div className="reorder-btns reorder-btns-vertical">
+                    <button
+                      type="button"
+                      className="btn-reorder"
+                      title="Move component up"
+                      disabled={buildIndex === 0}
+                      onClick={() => moveLayer(layer.id, 'up')}
+                    >
+                      ↑
+                    </button>
+                    <button
+                      type="button"
+                      className="btn-reorder"
+                      title="Move component down"
+                      disabled={buildIndex === buildSteps.length - 1}
+                      onClick={() => moveLayer(layer.id, 'down')}
+                    >
+                      ↓
+                    </button>
+                  </div>
+                )}
                 <div className="component-title">
-                  <span className="component-name">{getLayerDisplayName(layer)}</span>
-                  {layer.description && (
-                    <span className="component-desc">{layer.description}</span>
+                  <span className="component-name">
+                    {getLayerDisplayName(layerMeta)}
+                  </span>
+                  {layerMeta.description && (
+                    <span className="component-desc">{layerMeta.description}</span>
+                  )}
+                  {!inBuild && canReorder && (
+                    <span className="component-desc">この Mode では未使用</span>
                   )}
                 </div>
                 <button
@@ -182,32 +261,60 @@ export function ComponentsPanel({
               )}
 
               <ul className="file-list">
-                {files.map((file) => (
-                  <li
-                    key={file}
-                    className={
-                      selectedLayerId === layer.id && selectedFile === file
-                        ? 'active'
-                        : ''
-                    }
-                  >
-                    <button
-                      type="button"
-                      className="file-btn"
-                      onClick={() => onSelectFile(layer.id, file)}
+                {files.map((file) => {
+                  const inMode = isFileInBuild(layer.id, file);
+                  const step = buildSteps.find((s) => s.layer === layer.id);
+                  const fileIndex = step?.prompts.indexOf(file) ?? -1;
+
+                  return (
+                    <li
+                      key={file}
+                      className={
+                        selectedLayerId === layer.id && selectedFile === file
+                          ? 'active'
+                          : ''
+                      }
                     >
-                      {file}
-                    </button>
-                    <button
-                      type="button"
-                      className="btn-icon btn-danger"
-                      title="Delete file"
-                      onClick={() => onDeleteFile(layer.id, file)}
-                    >
-                      ×
-                    </button>
-                  </li>
-                ))}
+                      {canReorder && inMode && (
+                        <div className="reorder-btns">
+                          <button
+                            type="button"
+                            className="btn-reorder"
+                            title="Move prompt up"
+                            disabled={fileIndex <= 0}
+                            onClick={() => moveFile(layer.id, file, 'up')}
+                          >
+                            ↑
+                          </button>
+                          <button
+                            type="button"
+                            className="btn-reorder"
+                            title="Move prompt down"
+                            disabled={!step || fileIndex >= step.prompts.length - 1}
+                            onClick={() => moveFile(layer.id, file, 'down')}
+                          >
+                            ↓
+                          </button>
+                        </div>
+                      )}
+                      <button
+                        type="button"
+                        className={`file-btn ${!inMode ? 'file-btn-muted' : ''}`}
+                        onClick={() => onSelectFile(layer.id, file)}
+                      >
+                        {file}
+                      </button>
+                      <button
+                        type="button"
+                        className="btn-icon btn-danger"
+                        title="Delete file"
+                        onClick={() => onDeleteFile(layer.id, file)}
+                      >
+                        ×
+                      </button>
+                    </li>
+                  );
+                })}
                 <li className="file-actions">
                   <button
                     type="button"

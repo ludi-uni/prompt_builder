@@ -182,10 +182,32 @@ def test_git_baseline_api_uses_workspace_file(tmp_path, monkeypatch):
     assert data["source"] == "workspace"
 
 
+def test_update_export_reorder_prompts():
+    original = client.get("/api/exports/aituber").json()
+    try:
+        build = [step.copy() for step in original["build"]]
+        persona = next(step for step in build if step["layer"] == "persona")
+        persona["prompts"] = list(reversed(persona["prompts"]))
+
+        response = client.put(
+            "/api/exports/aituber",
+            json={**original, "build": build},
+        )
+        assert response.status_code == 200
+
+        prompt = build_prompt("aituber")
+        identity_index = prompt.index("Name: Airi")
+        speech_index = prompt.index("Use casual")
+        assert speech_index < identity_index
+    finally:
+        client.put("/api/exports/aituber", json=original)
+
+
 def test_git_baseline_api_not_available_without_git_or_file(tmp_path, monkeypatch):
     monkeypatch.setattr("app.services.git_baseline.ROOT", tmp_path)
     monkeypatch.setattr(
-        "app.services.git_baseline.WORKSPACE_DIR", tmp_path / "workspace"
+        "app.services.git_baseline.WORKSPACE_DIR",
+        tmp_path / "workspace",
     )
 
     response = client.get("/api/exports/aituber/git-baseline")

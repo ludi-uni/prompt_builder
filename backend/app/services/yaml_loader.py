@@ -44,3 +44,21 @@ def load_export(export_name: str) -> ExportConfig:
     with path.open(encoding="utf-8") as f:
         data = yaml.safe_load(f) or {}
     return ExportConfig.model_validate(data)
+
+
+def save_export(export_name: str, config: ExportConfig) -> ExportConfig:
+    if ".." in export_name or "/" in export_name or "\\" in export_name:
+        raise HTTPException(status_code=400, detail="Invalid export name")
+    path = EXPORTS_DIR / f"{export_name}.yaml"
+    if not path.exists():
+        raise HTTPException(status_code=404, detail=f"Export '{export_name}' not found")
+    EXPORTS_DIR.mkdir(parents=True, exist_ok=True)
+    with path.open("w", encoding="utf-8") as f:
+        yaml.dump(
+            config.model_dump(exclude_none=True),
+            f,
+            allow_unicode=True,
+            default_flow_style=False,
+            sort_keys=False,
+        )
+    return config

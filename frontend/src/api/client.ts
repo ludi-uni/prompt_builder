@@ -10,6 +10,16 @@ export interface ExportItem {
   name: string;
 }
 
+export interface BuildStep {
+  layer: string;
+  prompts: string[];
+}
+
+export interface ExportConfig {
+  name: string;
+  build: BuildStep[];
+}
+
 export interface LLMConfig {
   server_url: string;
   timeout_seconds: number;
@@ -99,6 +109,12 @@ export const api = {
     }),
 
   listExports: () => request<{ exports: ExportItem[] }>('/api/exports'),
+  getExport: (exportId: string) => request<ExportConfig>(`/api/exports/${exportId}`),
+  updateExport: (exportId: string, config: ExportConfig) =>
+    request<ExportConfig>(`/api/exports/${exportId}`, {
+      method: 'PUT',
+      body: JSON.stringify(config),
+    }),
   buildExport: (exportId: string) =>
     request<{ prompt: string }>(`/api/exports/${exportId}/build`),
   getGitBaseline: (exportId: string) =>
