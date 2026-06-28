@@ -17,6 +17,70 @@
   color: var(--text-primary);
 }
 
+.regression-character-row {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg-code);
+}
+
+.regression-character-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.regression-character-source {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.regression-character-source-auto {
+  background: rgba(61, 214, 140, 0.15);
+  color: #3dd68c;
+}
+
+.regression-character-source-override,
+.regression-character-source-suite {
+  background: rgba(79, 140, 255, 0.15);
+  color: #4f8cff;
+}
+
+.regression-character-source-missing {
+  background: rgba(255, 176, 32, 0.15);
+  color: #ffb020;
+}
+
+.regression-character-input {
+  width: 100%;
+  padding: 8px 10px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--bg-primary, #111);
+  color: var(--text-primary);
+  font-size: 13px;
+}
+
+.regression-character-hint {
+  margin: 0;
+  font-size: 12px;
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
+.regression-character-tag {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+
 .regression-toolbar {
   display: flex;
   flex-direction: column;

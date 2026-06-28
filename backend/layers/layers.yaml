@@ -1,0 +1,17 @@
+layers:
+- id: system
+  name: System
+  display_name: 🛡️ 安全性
+  description: システム制約
+- id: persona
+  name: Persona
+  display_name: 🧠 人格
+  description: 基本人格
+- id: memory
+  name: Memory
+  display_name: 📚 記憶
+  description: 長期記憶
+- id: style
+  name: Style
+  display_name: 💬 話し方
+  description: 口調・会話

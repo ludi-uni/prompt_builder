@@ -1,7 +1,10 @@
 import re
 from pathlib import Path
 
-from app.services.regression.hashing import normalize_whitespace
+from app.services.regression.character_context import (
+    build_in_character_pattern,
+    DEFAULT_ROLE_KEYWORDS,
+)
 
 
 class MatcherFailure:
@@ -33,7 +36,12 @@ def _regex_flags(flags: str | None) -> int:
     return result
 
 
-def evaluate_matcher(output: str, matcher: dict) -> tuple[bool, MatcherFailure | None]:
+def evaluate_matcher(
+    output: str,
+    matcher: dict,
+    *,
+    character_names: list[str] | None = None,
+) -> tuple[bool, MatcherFailure | None]:
     matcher_type = matcher.get("type")
     if not matcher_type:
         return False, MatcherFailure("unknown", "matcher type is required")
@@ -90,6 +98,30 @@ def evaluate_matcher(output: str, matcher: dict) -> tuple[bool, MatcherFailure |
             maximum,
         )
 
+    if matcher_type == "in_character":
+        names = character_names or []
+        if not names:
+            return False, MatcherFailure(
+                "in_character",
+                "character name is not configured; set Regression character names",
+            )
+        include_role = matcher.get("role_keywords", True)
+        pattern = build_in_character_pattern(names, include_role_keywords=include_role)
+        if pattern is None:
+            return False, MatcherFailure(
+                "in_character",
+                "character name is not configured; set Regression character names",
+            )
+        if re.search(pattern, output, re.IGNORECASE):
+            return True, None
+        label = ", ".join(names) if names else "character"
+        extra = f" or {', '.join(DEFAULT_ROLE_KEYWORDS)}" if include_role else ""
+        return False, MatcherFailure(
+            "in_character",
+            f"output does not mention {label}{extra}",
+            label,
+        )
+
     if matcher_type == "expected_file":
         return False, MatcherFailure(
             "expected_file",
@@ -135,11 +167,16 @@ def evaluate_case(
     expected_file: str | None = None,
     match_mode: str | None = None,
     suite_dir: Path | None = None,
+    character_names: list[str] | None = None,
 ) -> tuple[bool, list[dict]]:
     failures: list[dict] = []
 
     for matcher in matchers:
-        ok, failure = evaluate_matcher(output, matcher)
+        ok, failure = evaluate_matcher(
+            output,
+            matcher,
+            character_names=character_names,
+        )
         if not ok and failure:
             failures.append(failure.to_dict())
 

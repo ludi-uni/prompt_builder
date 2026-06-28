@@ -6,6 +6,7 @@ from app.models import (
     LayerMeta,
     LayerUpdate,
 )
+from app.services.layer_discovery import merge_layers_with_disk
 from app.services.paths import normalize_filename, resolve_layer_dir, resolve_layer_file
 from app.services.yaml_loader import load_layers_config, save_layers_config
 
@@ -14,7 +15,7 @@ router = APIRouter(prefix="/api/layers", tags=["layers"])
 
 @router.get("")
 def list_layers() -> dict:
-    config = load_layers_config()
+    config = merge_layers_with_disk(load_layers_config())
     return {"layers": config.layers}
 
 

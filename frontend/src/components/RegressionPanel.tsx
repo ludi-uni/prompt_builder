@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import {
   api,
+  type RegressionCharacterContext,
   type RegressionRunReport,
   type RegressionSnapshotStatus,
   type RegressionSuiteSummary,
@@ -13,6 +14,24 @@ interface RegressionPanelProps {
   onBusyChange: (busy: boolean) => void;
   onError: (err: unknown, fallback: string) => void;
   onSuccess: (message: string) => void;
+}
+
+function parseCharacterNamesInput(value: string): string[] {
+  return value
+    .split(/[,、]/)
+    .map((name) => name.trim())
+    .filter(Boolean);
+}
+
+function formatCharacterNames(names: string[]): string {
+  return names.join(', ');
+}
+
+function characterSourceLabel(source: RegressionCharacterContext['source']): string {
+  if (source === 'auto') return '自動検出';
+  if (source === 'suite') return 'スイート設定';
+  if (source === 'override') return '手動入力';
+  return '未設定';
 }
 
 function freshnessLabel(freshness: RegressionSnapshotStatus['freshness']): string {
@@ -34,15 +53,24 @@ export function RegressionPanel({
   const [report, setReport] = useState<RegressionRunReport | null>(null);
   const [expandedCase, setExpandedCase] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [characterInput, setCharacterInput] = useState('');
+  const [characterSource, setCharacterSource] =
+    useState<RegressionCharacterContext['source']>('missing');
+  const [characterTouched, setCharacterTouched] = useState(false);
 
   const refresh = useCallback(async () => {
     try {
-      const [statusResult, suitesResult] = await Promise.all([
+      const [statusResult, suitesResult, characterResult] = await Promise.all([
         api.getRegressionSnapshotStatus(),
         api.listRegressionSuites(),
+        api.getRegressionCharacterContext(),
       ]);
       setStatus(statusResult);
       setSuites(suitesResult.suites);
+      setCharacterSource(characterResult.source);
+      if (!characterTouched) {
+        setCharacterInput(formatCharacterNames(characterResult.names));
+      }
       if (
         suitesResult.suites.length > 0 &&
         !suitesResult.suites.some((suite) => suite.filename === selectedSuite)
@@ -52,7 +80,7 @@ export function RegressionPanel({
     } catch (err) {
       onError(err, 'Failed to load regression status');
     }
-  }, [onError, selectedSuite]);
+  }, [characterTouched, onError, selectedSuite]);
 
   useEffect(() => {
     void refresh();
@@ -86,11 +114,19 @@ export function RegressionPanel({
     setLoading(true);
     setReport(null);
     try {
+      const parsedNames = parseCharacterNamesInput(characterInput);
       const result = await api.runRegression({
         suite: selectedSuite,
+        character_names: parsedNames.length > 0 ? parsedNames : undefined,
         options: { ensure_snapshot: true, stop_on_first_failure: false },
       });
       setReport(result);
+      if (result.character) {
+        setCharacterSource(result.character.source);
+        if (!characterTouched) {
+          setCharacterInput(formatCharacterNames(result.character.names));
+        }
+      }
       await refresh();
       const failed = result.summary.failed;
       if (failed > 0) {
@@ -104,7 +140,16 @@ export function RegressionPanel({
       setLoading(false);
       onBusyChange(false);
     }
-  }, [llmConfigured, onBusyChange, onError, onSuccess, refresh, selectedSuite]);
+  }, [
+    characterInput,
+    characterTouched,
+    llmConfigured,
+    onBusyChange,
+    onError,
+    onSuccess,
+    refresh,
+    selectedSuite,
+  ]);
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
@@ -144,6 +189,32 @@ export function RegressionPanel({
           プロンプトが変更されています。Snapshot を更新してください。
         </div>
       )}
+
+      <div className="regression-character-row">
+        <label className="regression-character-label" htmlFor="regression-character-names">
+          キャラ名
+          <span className={`regression-character-source regression-character-source-${characterSource}`}>
+            {characterSourceLabel(characterSource)}
+          </span>
+        </label>
+        <input
+          id="regression-character-names"
+          className="regression-character-input"
+          type="text"
+          value={characterInput}
+          placeholder="例: Airi, アイリ, あいり（カンマ区切りで複数可）"
+          disabled={busy || loading}
+          onChange={(event) => {
+            setCharacterTouched(true);
+            setCharacterInput(event.target.value);
+            setCharacterSource('override');
+          }}
+        />
+        <p className="regression-character-hint">
+          in_character 系テスト（no_character_break など）で使用。プレフィックスの Name: などから自動検出します。
+          複数の別名・表記がある場合は、カンマ（,）または読点（、）区切りで入力してください（いずれかが出力に含まれれば PASS）。
+        </p>
+      </div>
 
       <div className="regression-toolbar">
         <div className={`regression-snapshot-status regression-snapshot-${freshness}`}>
@@ -192,6 +263,11 @@ export function RegressionPanel({
             </span>
             {report.snapshot.stale && (
               <span className="regression-stale-tag">stale snapshot</span>
+            )}
+            {report.character && report.character.names.length > 0 && (
+              <span className="regression-character-tag">
+                キャラ: {report.character.names.join(', ')}
+              </span>
             )}
           </div>
           <ul className="regression-case-list">

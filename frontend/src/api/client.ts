@@ -18,6 +18,7 @@ export interface BuildConfig {
 export interface LLMConfig {
   server_url: string;
   timeout_seconds: number;
+  disable_reasoning?: boolean;
 }
 
 export interface LLMUsage {
@@ -91,6 +92,7 @@ export interface RegressionRunReport {
     prompt_hash: string;
     stale: boolean;
   };
+  character?: RegressionCharacterContext;
   summary: {
     total: number;
     passed: number;
@@ -102,9 +104,16 @@ export interface RegressionRunReport {
   finished_at: string;
 }
 
+export interface RegressionCharacterContext {
+  names: string[];
+  source: 'auto' | 'suite' | 'override' | 'missing';
+  role_keywords: string[];
+}
+
 export interface RegressionRunRequest {
   suite: string;
   snapshot?: string;
+  character_names?: string[];
   options?: {
     stop_on_first_failure?: boolean;
     ensure_snapshot?: boolean;
@@ -217,6 +226,8 @@ export const api = {
     }),
   listRegressionSuites: () =>
     request<{ suites: RegressionSuiteSummary[] }>('/api/regression/suites'),
+  getRegressionCharacterContext: () =>
+    request<RegressionCharacterContext>('/api/regression/character-context'),
   runRegression: (body: RegressionRunRequest) =>
     request<RegressionRunReport>('/api/regression/run', {
       method: 'POST',

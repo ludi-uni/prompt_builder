@@ -17,9 +17,12 @@ n_gpu_layers: -1
 parallel: 1
 
 # 追加 CLI 引数（任意）
-# リグレッションテスト用 KV 保存（npm run regression / GUI Regression タブ）
+# 注意: on/off/yes/no は YAML では boolean になるため必ず引用符で囲む（例: "on"）
+# リグレッションテスト用 KV 保存（GUI Regression タブ）
 extra_args:
   - --slot-save-path
   - workspace/regression/kv
   - -sps
   - "0.0"
+  - --reasoning-budget
+  - "0"

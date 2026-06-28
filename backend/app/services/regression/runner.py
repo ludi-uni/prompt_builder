@@ -6,6 +6,7 @@ from datetime import datetime, timezone
 from fastapi import HTTPException
 
 from app.models import RegressionRunRequest
+from app.services.regression.character_context import get_character_context
 from app.services.regression.hashing import compute_prompt_hash
 from app.services.regression.llama_slots import get_llama_client
 from app.services.regression.matchers import evaluate_case
@@ -112,6 +113,12 @@ async def _run_regression_locked(body: RegressionRunRequest) -> dict:
 
     suite_dir = suite_directory(body.suite)
     defaults = suite.defaults
+    character_ctx = get_character_context(
+        prefix,
+        suite_names=suite.character_names,
+        override_names=body.character_names,
+    )
+    character_names = character_ctx["names"]
 
     for case in suite.cases:
         temperature = (
@@ -123,7 +130,7 @@ async def _run_regression_locked(body: RegressionRunRequest) -> dict:
 
         try:
             await client.restore_slot(filename)
-            output, usage, _ = await client.chat_completion(
+            output, usage, _ = await client.run_regression_case(
                 prefix=prefix,
                 user_input=case.input,
                 temperature=temperature,
@@ -138,6 +145,7 @@ async def _run_regression_locked(body: RegressionRunRequest) -> dict:
                 expected_file=case.expected_file,
                 match_mode=case.match_mode,
                 suite_dir=suite_dir,
+                character_names=character_names,
             )
             status = "pass" if ok else "fail"
             if ok:
@@ -185,6 +193,7 @@ async def _run_regression_locked(body: RegressionRunRequest) -> dict:
             "prompt_hash": prompt_hash,
             "stale": stale,
         },
+        "character": character_ctx,
         "started_at": started_at,
         "finished_at": finished_at,
         "summary": {

@@ -1,3 +1,4 @@
+import re
 import time
 from pathlib import Path
 
@@ -58,6 +59,62 @@ def _float_or_none(value: object) -> float | None:
     return None
 
 
+_CJK_RE = re.compile(r"[\u3040-\u30ff\u4e00-\u9fff]")
+
+
+def apply_chat_options(payload: dict, config: LLMConfig | None) -> dict:
+    if config is not None and config.disable_reasoning:
+        payload["chat_template_kwargs"] = {"enable_thinking": False}
+    return payload
+
+
+def extract_spoken_line_from_reasoning(reasoning: str) -> str | None:
+    """Pick the last likely user-facing line from chain-of-thought output."""
+    for match in reversed(re.findall(r"`([^`\n]+)`", reasoning)):
+        candidate = match.strip()
+        if _CJK_RE.search(candidate):
+            return candidate
+
+    for line in reversed(reasoning.splitlines()):
+        stripped = line.strip()
+        if not stripped or stripped.startswith(('"', "*", "-", "#")):
+            continue
+        if "Draft" in stripped or "Greeting:" in stripped or "Content:" in stripped:
+            continue
+        if _CJK_RE.search(stripped):
+            return re.sub(r"^\*\s*", "", stripped).strip()
+    return None
+
+
+def extract_message_content(message: dict) -> str:
+    """Extract assistant text from llama-server message (incl. reasoning models)."""
+    if not isinstance(message, dict):
+        return ""
+
+    content = message.get("content")
+    if isinstance(content, str) and content.strip():
+        return content
+
+    reasoning = message.get("reasoning_content")
+    if isinstance(reasoning, str) and reasoning.strip():
+        spoken = extract_spoken_line_from_reasoning(reasoning)
+        if spoken:
+            return spoken
+        return reasoning
+
+    if content is not None:
+        return str(content)
+    return ""
+
+
+def extract_assistant_content(data: dict) -> str:
+    try:
+        message = data["choices"][0]["message"]
+    except (KeyError, IndexError, TypeError) as exc:
+        raise ValueError("Unexpected llama-server response") from exc
+    return extract_message_content(message)
+
+
 def parse_llm_metrics(data: dict, elapsed_ms: float | None = None) -> LLMUsageMetrics:
     usage = data.get("usage") if isinstance(data.get("usage"), dict) else {}
     timings = data.get("timings") if isinstance(data.get("timings"), dict) else {}
@@ -96,10 +153,13 @@ class LlamaServerRunner:
 
     async def run(self, prompt: str) -> LLMTestResponse:
         url = self.config.server_url.rstrip("/") + "/v1/chat/completions"
-        payload = {
-            "messages": [{"role": "user", "content": prompt}],
-            "stream": False,
-        }
+        payload = apply_chat_options(
+            {
+                "messages": [{"role": "user", "content": prompt}],
+                "stream": False,
+            },
+            self.config,
+        )
         started = time.perf_counter()
         try:
             async with httpx.AsyncClient(timeout=self.config.timeout_seconds) as client:
@@ -124,8 +184,8 @@ class LlamaServerRunner:
         elapsed_ms = (time.perf_counter() - started) * 1000
 
         try:
-            content = data["choices"][0]["message"]["content"]
-        except (KeyError, IndexError, TypeError) as exc:
+            content = extract_assistant_content(data)
+        except ValueError as exc:
             raise HTTPException(
                 status_code=502, detail="Unexpected llama-server response"
             ) from exc

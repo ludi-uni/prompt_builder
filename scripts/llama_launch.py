@@ -64,6 +64,25 @@ def load_config() -> dict:
         return yaml.safe_load(handle) or {}
 
 
+def normalize_extra_args(raw: object) -> list[str]:
+    """Coerce extra_args to CLI strings (YAML may parse on/off as booleans)."""
+    if raw is None:
+        return []
+    if not isinstance(raw, list):
+        _fail("extra_args in config/llama.yaml must be a list")
+    args: list[str] = []
+    for item in raw:
+        if isinstance(item, bool):
+            args.append("true" if item else "false")
+        elif isinstance(item, (int, float)):
+            args.append(str(item))
+        elif isinstance(item, str):
+            args.append(item)
+        else:
+            _fail(f"Invalid extra_args entry: {item!r} (use quoted strings in YAML)")
+    return args
+
+
 def build_command(cfg: dict) -> list[str]:
     server = cfg.get("server", {})
     host = os.environ.get("LLAMA_HOST", server.get("host", "127.0.0.1"))
@@ -90,7 +109,7 @@ def build_command(cfg: dict) -> list[str]:
         str(cfg.get("n_gpu_layers", -1)),
         "--parallel",
         str(cfg.get("parallel", 1)),
-        *(cfg.get("extra_args") or []),
+        *normalize_extra_args(cfg.get("extra_args")),
     ]
     return cmd, host, port, model_path
 

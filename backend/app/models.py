@@ -44,6 +44,7 @@ class FileCreate(BaseModel):
 class LLMConfig(BaseModel):
     server_url: str = "http://127.0.0.1:8080"
     timeout_seconds: float = 120.0
+    disable_reasoning: bool = True
 
 
 class LLMTestRequest(BaseModel):
@@ -78,6 +79,7 @@ class MatcherSpec(BaseModel):
     flags: str | None = None
     path: str | None = None
     match_mode: str | None = None
+    role_keywords: bool | None = None
 
 
 class RegressionCaseSpec(BaseModel):
@@ -100,6 +102,7 @@ class RegressionSuite(BaseModel):
     name: str
     description: str | None = None
     snapshot: str = "latest"
+    character_names: list[str] | None = None
     defaults: RegressionSuiteDefaults = Field(default_factory=RegressionSuiteDefaults)
     cases: list[RegressionCaseSpec]
 
@@ -112,4 +115,5 @@ class RegressionRunOptions(BaseModel):
 class RegressionRunRequest(BaseModel):
     suite: str
     snapshot: str = "latest"
+    character_names: list[str] | None = None
     options: RegressionRunOptions = Field(default_factory=RegressionRunOptions)

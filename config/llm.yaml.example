@@ -1,2 +1,4 @@
 server_url: http://127.0.0.1:8080
 timeout_seconds: 120.0
+# Gemma 4 等: reasoning を無効化して content に直接応答させる
+disable_reasoning: true

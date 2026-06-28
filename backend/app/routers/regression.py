@@ -1,10 +1,12 @@
 from fastapi import APIRouter, Response
 
 from app.models import RegressionRunRequest, RegressionSuite
+from app.services.regression.character_context import get_character_context
 from app.services.regression.runner import get_run_report, list_runs, run_regression
 from app.services.regression.snapshot import (
     create_snapshot,
     delete_snapshot,
+    get_current_prefix,
     get_snapshot_status,
 )
 from app.services.regression.suite import (
@@ -54,6 +56,12 @@ def suites_save(name: str, body: RegressionSuite) -> dict:
 def suites_delete(name: str, response: Response) -> None:
     delete_suite(name)
     response.status_code = 204
+
+
+@router.get("/character-context")
+def character_context() -> dict:
+    prefix = get_current_prefix()
+    return get_character_context(prefix)
 
 
 @router.post("/run")

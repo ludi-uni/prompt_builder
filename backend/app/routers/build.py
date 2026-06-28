@@ -5,7 +5,7 @@ from app.config import WORKSPACE_DIR
 from app.models import BuildConfig
 from app.services.build_loader import load_build_config, save_build_config
 from app.services.git_baseline import get_git_baseline
-from app.services.prompt_builder import build_prompt
+from app.services.prompt_builder import build_prompt, build_prompt_with_meta
 
 router = APIRouter(prefix="/api/build", tags=["build"])
 
@@ -24,8 +24,7 @@ def update_build(body: BuildConfig) -> dict:
 
 @router.get("/prompt")
 def get_built_prompt() -> dict:
-    prompt = build_prompt()
-    return {"prompt": prompt}
+    return build_prompt_with_meta()
 
 
 @router.get("/git-baseline")

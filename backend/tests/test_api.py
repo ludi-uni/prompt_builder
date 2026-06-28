@@ -150,6 +150,49 @@ def test_llm_health_not_configured(monkeypatch):
     assert data["error"] is not None
 
 
+def test_extract_message_content_reasoning_model():
+    from app.services.llm_runner import (
+        extract_assistant_content,
+        extract_message_content,
+        extract_spoken_line_from_reasoning,
+    )
+
+    assert extract_message_content(
+        {"role": "assistant", "content": "hello", "reasoning_content": "think"}
+    ) == "hello"
+    assert extract_message_content(
+        {
+            "role": "assistant",
+            "content": "",
+            "reasoning_content": "reasoning output",
+        }
+    ) == "reasoning output"
+    draft_reasoning = (
+        '* Draft 3: やっほー\n'
+        '`やっほー！アイリだよ。AITuberとして活動してるの。`'
+    )
+    assert (
+        extract_spoken_line_from_reasoning(draft_reasoning)
+        == "やっほー！アイリだよ。AITuberとして活動してるの。"
+    )
+    assert (
+        extract_assistant_content(
+            {
+                "choices": [
+                    {
+                        "message": {
+                            "role": "assistant",
+                            "content": "",
+                            "reasoning_content": draft_reasoning,
+                        }
+                    }
+                ]
+            }
+        )
+        == "やっほー！アイリだよ。AITuberとして活動してるの。"
+    )
+
+
 def test_parse_llm_metrics_from_llama_response():
     from app.services.llm_runner import parse_llm_metrics
 

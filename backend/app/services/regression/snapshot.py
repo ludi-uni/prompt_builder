@@ -176,12 +176,7 @@ async def create_snapshot() -> dict:
     filename = kv_filename(prompt_hash)
 
     await client.erase_slot()
-    _, usage, elapsed_ms = await client.chat_completion(
-        prefix=prefix,
-        user_input=None,
-        max_tokens=1,
-        temperature=0.0,
-    )
+    usage, elapsed_ms = await client.prefill_prefix(prefix)
     await client.save_slot(filename)
 
     snapshot_dir = SNAPSHOTS_DIR / hash_to_dirname(prompt_hash)
