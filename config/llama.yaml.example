@@ -20,6 +20,8 @@ parallel: 1
 # 注意: on/off/yes/no は YAML では boolean になるため必ず引用符で囲む（例: "on"）
 # リグレッションテスト用 KV 保存（GUI Regression タブ）
 extra_args:
+  - --flash-attn
+  - "on"
   - --slot-save-path
   - workspace/regression/kv
   - -sps

@@ -1,55 +1,37 @@
 # Prompt Studio
 
-レイヤー型プロンプト IDE。Markdown を部品化し、`build.yaml` で結合順を定義してプレビュー・テストできます。
+レイヤー型プロンプト IDE。Markdown を部品化し、`build.yaml` で結合順を定義してプレビュー・LLM テスト・リグレッション検証ができます。
+
+## 機能
+
+- **Components** — レイヤー単位で Markdown 部品を管理・並べ替え
+- **Editor** — Monaco による Markdown 編集（手動 Save）
+- **生成プロンプト / プレビュー / テスト** — 右ペインのタブで切り替え
+- **Diff** — 初期プロンプトまたは前回 Save 時点との差分（Raw / プレビュー両方）
+- **Regression** — llama-server KV スロットキャッシュを使った一括テスト（[仕様](docs/リグレッション仕様.md)）
 
 ## 前提
 
 - Node.js 18+
 - Python 3.10+
-- **すべてのコマンドはプロジェクトルート（`prompt_builder/`）で実行**
+- （任意）llama.cpp `llama-server` + GGUF モデル — LLM テスト・リグレッション用
 
-## コマンド一覧
+**すべてのコマンドはプロジェクトルートで実行してください。**
 
-| コマンド | 説明 |
-|----------|------|
-| `npm run setup` | 初回セットアップ（venv・依存関係・`config/llm.yaml`） |
-| `npm run dev` | Backend + Frontend を同時起動 |
-| `npm run dev:all` | llama-server + Prompt Studio を同時起動 |
-| `npm run llama` | llama-server を起動（要 GGUF モデル） |
-| `npm run dev:api` | Backend のみ起動 |
-| `npm run dev:web` | Frontend のみ起動 |
-| `npm run test` | Backend テスト実行 |
-| `npm run build` | Frontend 本番ビルド |
-| `npm run lint` | Frontend + Backend Lint |
-| `npm run lint:web` | Frontend Lint（oxlint） |
-| `npm run lint:api` | Backend Lint（ruff） |
-| `npm run format` | Frontend + Backend フォーマット |
-| `npm run format:web` | Frontend フォーマット（oxfmt） |
-| `npm run format:api` | Backend フォーマット（ruff） |
-| `npm run format:check` | フォーマット差分チェック（CI 向け） |
-
-### 初回
+## クイックスタート
 
 ```powershell
+git clone <your-repo-url>
 cd prompt_builder
-npm install          # concurrently 等（ルート）
-npm run setup        # Python venv + frontend 依存関係
+npm install
+npm run setup        # venv・依存関係・config/*.yaml を example から生成
 npm run dev
 ```
 
 - GUI: http://127.0.0.1:61010
 - API docs: http://127.0.0.1:61000/docs
 
-### 2 回目以降
-
-```powershell
-cd prompt_builder
-npm run dev
-```
-
-デフォルトは **61000番台**（API: 61000、GUI: 61010）です。使用中の場合は 61001、61011 等を自動で選びます。起動ログに実際の URL が表示されます。
-
-### ポートを固定する場合
+ポートは使用中の場合 61001 等に自動でずらされます。固定する場合:
 
 ```powershell
 $env:PROMPT_STUDIO_API_PORT = "61000"
@@ -57,88 +39,75 @@ $env:PROMPT_STUDIO_WEB_PORT = "61010"
 npm run dev
 ```
 
-使用中のポートを指定するとエラーになります。先に既存プロセスを停止してください。
+## コマンド一覧
 
-```powershell
-# 例: 61000 を使っている PID を確認
-netstat -ano | findstr :61000
-```
+| コマンド | 説明 |
+|----------|------|
+| `npm run setup` | 初回セットアップ |
+| `npm run dev` | Backend + Frontend |
+| `npm run dev:all` | llama-server + Prompt Studio |
+| `npm run llama` | llama-server 起動 |
+| `npm run test` | Backend テスト |
+| `npm run build` | Frontend 本番ビルド |
+| `npm run lint` | Frontend + Backend Lint |
+| `npm run format` | フォーマット |
+| `npm run format:check` | フォーマット差分チェック（CI 向け） |
 
 ## ディレクトリ構成
 
 ```text
 prompt_builder/
-├── package.json       # ルートコマンド（npm run dev 等）
-├── scripts/           # setup / dev / test スクリプト
 ├── frontend/          # React + Vite GUI
 ├── backend/           # FastAPI API
 ├── layers/            # レイヤー Markdown + layers.yaml
-├── build.yaml         # プロンプト結合順の定義
-├── workspace/         # 生成物出力先
-├── models/            # GGUF モデル置き場
-└── config/            # LLM / llama-server 設定
+├── build.yaml         # プロンプト結合順
+├── regression/        # リグレッションスイート定義
+├── workspace/         # 生成物・KV キャッシュ（git 除外）
+├── models/            # GGUF モデル置き場（git 除外）
+├── config/            # 設定（*.example を setup でコピー）
+└── docs/              # 仕様書
 ```
 
-## 使い方（v0.2）
+## 使い方
 
-1. **Components** ボタンで左スライドオーバーから Markdown ファイルを選択
-2. 中央 **Editor** で編集（停止 500ms 後に自動保存 → Prompt 自動更新）
-3. Components 内 **↑↓** で結合順を変更（`build.yaml` に保存）
-4. **RUN TEST** で LLM 動作確認（右ペイン **Test Result** に出力・メトリクス表示）
-5. **Show Prompt** で完成 Prompt を表示（**Full / Diff / vs Git** タブ）
-6. workspace 出力は **⋯ メニュー → Export to workspace**（`Ctrl+Shift+E`）
+1. **Components** で Markdown ファイルを選択
+2. 左ペイン **Editor** で編集 → **Save**（`Ctrl+S`）で保存・プロンプト再ビルド
+3. 右ペイン **生成プロンプト** — Raw / Diff / vs Git
+4. 右ペイン **プレビュー** — レンダリング / Diff / vs Git
+5. 右ペイン **テスト** — Single Test / Regression
+6. **Export to workspace** — `⋯` メニュー または `Ctrl+Shift+E`
 
 ### ショートカット
 
 | キー | 動作 |
 |------|------|
-| `Ctrl+S` | 即時保存 |
+| `Ctrl+S` | 保存 |
 | `Ctrl+Shift+E` | workspace に Export |
+| `Ctrl+Shift+S` | Regression: Snapshot 更新 |
+| `Ctrl+Shift+R` | Regression: Run Suite |
 
 ## LLM 設定（llama.cpp）
 
-Prompt Studio は llama-server（llama.cpp）の OpenAI 互換 API に接続します。
+### 1. モデル配置
 
-### クイックスタート
-
-```powershell
-# 1. llama-server をインストール（PATH に llama-server が通る状態にする）
-#    https://github.com/ggml-org/llama.cpp/releases
-
-# 2. GGUF モデルを models/ に配置
-#    例: models/your-model.gguf
-
-# 3. config/llama.yaml でモデルパスを指定（npm run setup で自動生成）
-#    model: models/your-model.gguf
-
-# 4. llama-server を起動
-npm run llama
-
-# 5. 別ターミナルで Prompt Studio を起動
-npm run dev
+```text
+models/your-model.gguf
 ```
 
-`npm run dev:all` で llama-server と Prompt Studio を同時起動できます。
+### 2. 設定ファイル
 
-### GUI からの設定
+setup で `config/*.example` からコピーされます。手動で編集する場合:
 
-1. **LLM** ボタン → Server URL を確認（デフォルト: `http://127.0.0.1:8080`）
-2. **接続確認** で llama-server への接続をテスト
-3. **Run Test** でプロンプトを LLM に送信
-
-ツールバーの LLM 表示: `✓` 接続 OK / `!` 未接続 / `○` 未設定
-
-### 設定ファイル
-
-**`config/llama.yaml`** — llama-server 起動用（`npm run llama`）
+**`config/llama.yaml`** — `npm run llama` 用
 
 ```yaml
 server:
   host: 127.0.0.1
   port: 8080
 model: models/your-model.gguf
-ctx_size: 4096
-n_gpu_layers: -1
+extra_args:
+  - --slot-save-path
+  - workspace/regression/kv
 ```
 
 **`config/llm.yaml`** — Prompt Studio からの接続先
@@ -146,17 +115,26 @@ n_gpu_layers: -1
 ```yaml
 server_url: http://127.0.0.1:8080
 timeout_seconds: 120.0
+disable_reasoning: true
 ```
 
-環境変数で上書き可能: `LLAMA_MODEL`, `LLAMA_SERVER`, `LLAMA_HOST`, `LLAMA_PORT`
+`config/llama.yaml` と `config/llm.yaml` は `.gitignore` 対象です。リポジトリには `*.example` のみ含まれます。
+
+### 3. 起動
+
+```powershell
+npm run llama          # ターミナル 1
+npm run dev            # ターミナル 2
+# または
+npm run dev:all
+```
+
+GUI の **LLM** ボタンで接続先を確認・変更できます。
 
 ## build.yaml
 
-プロンプトの結合順はルートの `build.yaml` で定義します。Components パネルの ↑↓ 操作でも更新されます。
-
 ```yaml
 name: Prompt
-
 build:
   - layer: system
     prompts:
@@ -168,8 +146,25 @@ build:
       - speech.md
 ```
 
-Markdown 結合時は `\n\n---\n\n` で区切られます。`build.yaml` が無い場合は、登録済み Component の Markdown から自動生成されます。
+Markdown 結合時の区切りは `\n\n---\n\n` です。
+
+## 公開リポジトリについて
+
+| 含まれる | 含まれない（`.gitignore`） |
+|----------|---------------------------|
+| ソース・サンプル layers | `config/llm.yaml`, `config/llama.yaml` |
+| `config/*.example` | `models/*.gguf` |
+| リグレッションスイート定義 | `workspace/regression/kv/`, `runs/`, `snapshots/` |
+| ドキュメント | `.venv/`, `node_modules/` |
+
+初回 clone 後は必ず `npm run setup` を実行してください。
+
+## ドキュメント
+
+- [仕様書](docs/仕様書.md)
+- [リグレッション仕様](docs/リグレッション仕様.md)
+- [追加仕様](docs/追加仕様.md)
 
 ## ライセンス
 
-（未定）
+[MIT](LICENSE)

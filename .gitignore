@@ -1,8 +1,15 @@
 # Python
 __pycache__/
 *.py[cod]
+*.pyo
 .venv/
 venv/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+*.egg-info/
 
 # Node
 node_modules/
@@ -10,15 +17,23 @@ frontend/node_modules/
 dist/
 frontend/dist/
 
-# Workspace outputs
+# Environment / secrets
+.env
+.env.*
+!.env.example
+
+# Workspace outputs (local runtime data)
 workspace/generated_prompt.md
 workspace/preview.md
 workspace/logs/
 workspace/temp/
-workspace/regression/kv/
+workspace/regression/kv/*
+!workspace/regression/kv/.gitkeep
 workspace/regression/runs/
+workspace/regression/snapshots/*
+!workspace/regression/snapshots/.gitkeep
 
-# Config (local)
+# Config (local — copy from *.example on setup)
 config/llm.yaml
 config/llama.yaml
 
@@ -26,10 +41,9 @@ config/llama.yaml
 models/*.gguf
 models/**/*.gguf
 
-# IDE
+# IDE / OS
 .vscode/
 .idea/
-
-# OS
+*.swp
 .DS_Store
 Thumbs.db
