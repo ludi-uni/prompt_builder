@@ -5,17 +5,12 @@ export interface LayerMeta {
   description?: string;
 }
 
-export interface ExportItem {
-  id: string;
-  name: string;
-}
-
 export interface BuildStep {
   layer: string;
   prompts: string[];
 }
 
-export interface ExportConfig {
+export interface BuildConfig {
   name: string;
   build: BuildStep[];
 }
@@ -108,24 +103,22 @@ export const api = {
       method: 'DELETE',
     }),
 
-  listExports: () => request<{ exports: ExportItem[] }>('/api/exports'),
-  getExport: (exportId: string) => request<ExportConfig>(`/api/exports/${exportId}`),
-  updateExport: (exportId: string, config: ExportConfig) =>
-    request<ExportConfig>(`/api/exports/${exportId}`, {
+  getBuild: () => request<BuildConfig>('/api/build'),
+  updateBuild: (config: BuildConfig) =>
+    request<BuildConfig>('/api/build', {
       method: 'PUT',
       body: JSON.stringify(config),
     }),
-  buildExport: (exportId: string) =>
-    request<{ prompt: string }>(`/api/exports/${exportId}/build`),
-  getGitBaseline: (exportId: string) =>
+  buildPrompt: () => request<{ prompt: string }>('/api/build/prompt'),
+  getGitBaseline: () =>
     request<{
       available: boolean;
       prompt: string | null;
       source: string | null;
       message: string | null;
-    }>(`/api/exports/${exportId}/git-baseline`),
-  exportToWorkspace: (exportId: string) =>
-    request<{ path: string; prompt: string }>(`/api/exports/${exportId}/export`, {
+    }>('/api/build/git-baseline'),
+  exportToWorkspace: () =>
+    request<{ path: string; prompt: string }>('/api/build/export', {
       method: 'POST',
     }),
 

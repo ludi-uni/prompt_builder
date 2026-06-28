@@ -2,7 +2,7 @@ from pathlib import Path
 
 ROOT = Path.cwd()
 LAYERS_DIR = ROOT / "layers"
-EXPORTS_DIR = ROOT / "exports"
+BUILD_PATH = ROOT / "build.yaml"
 WORKSPACE_DIR = ROOT / "workspace"
 CONFIG_DIR = ROOT / "config"
 

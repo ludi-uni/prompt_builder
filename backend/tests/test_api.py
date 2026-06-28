@@ -25,30 +25,38 @@ def test_list_layers():
     assert persona.get("display_name") == "🧠 人格"
 
 
-def test_list_exports():
-    response = client.get("/api/exports")
+def test_get_build():
+    response = client.get("/api/build")
     assert response.status_code == 200
-    exports = response.json()["exports"]
-    assert any(item["id"] == "aituber" for item in exports)
+    data = response.json()
+    assert "build" in data
+    assert any(step["layer"] == "persona" for step in data["build"])
 
 
 def test_build_prompt_contains_separator():
-    prompt = build_prompt("aituber")
+    prompt = build_prompt()
     assert "---" in prompt
-    assert "Airi" in prompt
-    assert "Safety" in prompt
 
 
 def test_build_prompt_order():
-    prompt = build_prompt("aituber")
-    role_index = prompt.index("helpful AI assistant")
-    identity_index = prompt.index("Name: Airi")
-    concise_index = prompt.index("Prefer short")
-    assert role_index < identity_index < concise_index
+    config = client.get("/api/build").json()
+    persona = next(step for step in config["build"] if step["layer"] == "persona")
+    first_file, second_file = persona["prompts"][0], persona["prompts"][1]
+
+    prompt = build_prompt()
+    first_content = client.get(f"/api/layers/persona/files/{first_file}").json()[
+        "content"
+    ]
+    second_content = client.get(f"/api/layers/persona/files/{second_file}").json()[
+        "content"
+    ]
+    marker_a = first_content.strip().splitlines()[0]
+    marker_b = second_content.strip().splitlines()[0]
+    assert prompt.index(marker_a) < prompt.index(marker_b)
 
 
-def test_build_export_api():
-    response = client.get("/api/exports/aituber/build")
+def test_build_prompt_api():
+    response = client.get("/api/build/prompt")
     assert response.status_code == 200
     assert "prompt" in response.json()
 
@@ -174,7 +182,7 @@ def test_git_baseline_api_uses_workspace_file(tmp_path, monkeypatch):
     monkeypatch.setattr("app.services.git_baseline.ROOT", tmp_path)
     monkeypatch.setattr("app.services.git_baseline.WORKSPACE_DIR", workspace)
 
-    response = client.get("/api/exports/aituber/git-baseline")
+    response = client.get("/api/build/git-baseline")
     assert response.status_code == 200
     data = response.json()
     assert data["available"] is True
@@ -182,25 +190,33 @@ def test_git_baseline_api_uses_workspace_file(tmp_path, monkeypatch):
     assert data["source"] == "workspace"
 
 
-def test_update_export_reorder_prompts():
-    original = client.get("/api/exports/aituber").json()
+def test_update_build_reorder_prompts():
+    original = client.get("/api/build").json()
     try:
         build = [step.copy() for step in original["build"]]
         persona = next(step for step in build if step["layer"] == "persona")
         persona["prompts"] = list(reversed(persona["prompts"]))
 
         response = client.put(
-            "/api/exports/aituber",
+            "/api/build",
             json={**original, "build": build},
         )
         assert response.status_code == 200
 
-        prompt = build_prompt("aituber")
-        identity_index = prompt.index("Name: Airi")
-        speech_index = prompt.index("Use casual")
-        assert speech_index < identity_index
+        prompt = build_prompt()
+        first_file = persona["prompts"][0]
+        second_file = persona["prompts"][1]
+        content_a = client.get(f"/api/layers/persona/files/{first_file}").json()[
+            "content"
+        ]
+        content_b = client.get(f"/api/layers/persona/files/{second_file}").json()[
+            "content"
+        ]
+        index_a = prompt.index(content_a.strip()[:20])
+        index_b = prompt.index(content_b.strip()[:20])
+        assert index_a < index_b
     finally:
-        client.put("/api/exports/aituber", json=original)
+        client.put("/api/build", json=original)
 
 
 def test_git_baseline_api_not_available_without_git_or_file(tmp_path, monkeypatch):
@@ -210,7 +226,7 @@ def test_git_baseline_api_not_available_without_git_or_file(tmp_path, monkeypatc
         tmp_path / "workspace",
     )
 
-    response = client.get("/api/exports/aituber/git-baseline")
+    response = client.get("/api/build/git-baseline")
     assert response.status_code == 200
     data = response.json()
     assert data["available"] is False

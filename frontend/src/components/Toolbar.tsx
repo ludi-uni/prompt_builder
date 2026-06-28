@@ -1,11 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
-import type { ExportItem } from '../api/client';
 import './Toolbar.css';
 
 interface ToolbarProps {
-  exports: ExportItem[];
-  selectedExport: string | null;
-  onExportChange: (exportId: string) => void;
   onExportPrompt: () => void;
   onRunTest: () => void;
   onOpenLLMSettings: () => void;
@@ -15,12 +11,10 @@ interface ToolbarProps {
   llmConfigured: boolean;
   llmReachable: boolean;
   busy: boolean;
+  canRunTest: boolean;
 }
 
 export function Toolbar({
-  exports,
-  selectedExport,
-  onExportChange,
   onExportPrompt,
   onRunTest,
   onOpenLLMSettings,
@@ -30,6 +24,7 @@ export function Toolbar({
   llmConfigured,
   llmReachable,
   busy,
+  canRunTest,
 }: ToolbarProps) {
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -65,25 +60,6 @@ export function Toolbar({
           Components
         </button>
       </div>
-      <div className="toolbar-center">
-        <fieldset className="mode-fieldset">
-          <legend className="mode-legend">Mode</legend>
-          {exports.length === 0 && <span className="mode-empty">No modes</span>}
-          {exports.map((item) => (
-            <label key={item.id} className="mode-option">
-              <input
-                type="radio"
-                name="mode"
-                value={item.id}
-                checked={selectedExport === item.id}
-                disabled={busy}
-                onChange={() => onExportChange(item.id)}
-              />
-              <span>{item.name}</span>
-            </label>
-          ))}
-        </fieldset>
-      </div>
       <div className="toolbar-right">
         <button type="button" className="btn-secondary" onClick={onTogglePrompt}>
           {showPrompt ? 'Hide Prompt' : 'Show Prompt'}
@@ -101,7 +77,7 @@ export function Toolbar({
             <div className="toolbar-menu-dropdown">
               <button
                 type="button"
-                disabled={busy || !selectedExport}
+                disabled={busy}
                 onClick={() => {
                   setMenuOpen(false);
                   onExportPrompt();
@@ -125,7 +101,7 @@ export function Toolbar({
           type="button"
           className="btn-primary btn-run-test"
           onClick={onRunTest}
-          disabled={busy || !selectedExport}
+          disabled={busy || !canRunTest}
         >
           RUN TEST
         </button>

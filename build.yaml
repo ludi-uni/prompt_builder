@@ -1,0 +1,14 @@
+name: Prompt
+build:
+- layer: system
+  prompts:
+  - system_prompt.md
+- layer: persona
+  prompts:
+  - character_bible.md
+  - core_soul_prompt.md
+- layer: growt
+  prompts:
+  - growth_rules.md
+  - guiding_soul_prompt.md
+  - social_identity_snippet.md

@@ -1,6 +1,6 @@
 # Prompt Studio
 
-レイヤー型プロンプト IDE。Markdown を部品化し、Export 定義で用途ごとに組み立て・プレビュー・テストできます。
+レイヤー型プロンプト IDE。Markdown を部品化し、`build.yaml` で結合順を定義してプレビュー・テストできます。
 
 ## 前提
 
@@ -73,7 +73,7 @@ prompt_builder/
 ├── frontend/          # React + Vite GUI
 ├── backend/           # FastAPI API
 ├── layers/            # レイヤー Markdown + layers.yaml
-├── exports/           # Export 定義 YAML
+├── build.yaml         # プロンプト結合順の定義
 ├── workspace/         # 生成物出力先
 ├── models/            # GGUF モデル置き場
 └── config/            # LLM / llama-server 設定
@@ -83,9 +83,9 @@ prompt_builder/
 
 1. **Components** ボタンで左スライドオーバーから Markdown ファイルを選択
 2. 中央 **Editor** で編集（停止 500ms 後に自動保存 → Prompt 自動更新）
-3. 上部 **Mode** ラジオで用途を切り替え（Chat / AITuber / API 等）
+3. Components 内 **↑↓** で結合順を変更（`build.yaml` に保存）
 4. **RUN TEST** で LLM 動作確認（右ペイン **Test Result** に出力・メトリクス表示）
-5. **Show Prompt** で完成 Prompt を表示（**Full / Diff / vs Mode / vs Git** タブ）
+5. **Show Prompt** で完成 Prompt を表示（**Full / Diff / vs Git** タブ）
 6. workspace 出力は **⋯ メニュー → Export to workspace**（`Ctrl+Shift+E`）
 
 ### ショートカット
@@ -150,12 +150,12 @@ timeout_seconds: 120.0
 
 環境変数で上書き可能: `LLAMA_MODEL`, `LLAMA_SERVER`, `LLAMA_HOST`, `LLAMA_PORT`
 
-## Export の追加
+## build.yaml
 
-`exports/` に YAML を追加:
+プロンプトの結合順はルートの `build.yaml` で定義します。Components パネルの ↑↓ 操作でも更新されます。
 
 ```yaml
-name: My Export
+name: Prompt
 
 build:
   - layer: system
@@ -165,9 +165,10 @@ build:
   - layer: persona
     prompts:
       - identity.md
+      - speech.md
 ```
 
-Markdown 結合時は `\n\n---\n\n` で区切られます。
+Markdown 結合時は `\n\n---\n\n` で区切られます。`build.yaml` が無い場合は、登録済み Component の Markdown から自動生成されます。
 
 ## ライセンス
 

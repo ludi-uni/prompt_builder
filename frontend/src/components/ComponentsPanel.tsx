@@ -180,7 +180,7 @@ export function ComponentsPanel({
       <div className="panel-header">
         <div>
           <h2>Prompt Components</h2>
-          {canReorder && <p className="panel-hint">↑↓ で現在の Mode の結合順を変更</p>}
+          {canReorder && <p className="panel-hint">↑↓ で結合順を変更</p>}
         </div>
         <button
           type="button"
@@ -243,7 +243,7 @@ export function ComponentsPanel({
                     <span className="component-desc">{layerMeta.description}</span>
                   )}
                   {!inBuild && canReorder && (
-                    <span className="component-desc">この Mode では未使用</span>
+                    <span className="component-desc">build.yaml に未登録</span>
                   )}
                 </div>
                 <button

@@ -17,7 +17,7 @@ class BuildStep(BaseModel):
     prompts: list[str]
 
 
-class ExportConfig(BaseModel):
+class BuildConfig(BaseModel):
     name: str
     build: list[BuildStep]
 

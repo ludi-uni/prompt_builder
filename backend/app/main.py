@@ -3,7 +3,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.routers import exports, layers, llm
+from app.routers import build, layers, llm
 from app.services.bootstrap import ensure_layers_initialized
 
 
@@ -24,7 +24,7 @@ app.add_middleware(
 )
 
 app.include_router(layers.router)
-app.include_router(exports.router)
+app.include_router(build.router)
 app.include_router(llm.router)
 
 

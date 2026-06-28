@@ -70,9 +70,7 @@ export function TestResultPanel({
           <div className="test-result-empty">
             <p>RUN TEST でプロンプトを LLM に送信し、結果をここに表示します。</p>
             {!inputPrompt && (
-              <p className="test-result-hint">
-                Mode を選び、Component を編集してください。
-              </p>
+              <p className="test-result-hint">Component を編集してください。</p>
             )}
           </div>
         )}
