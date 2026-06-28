@@ -41,6 +41,76 @@ export interface LLMHealth {
   error: string | null;
 }
 
+export interface RegressionSnapshotStatus {
+  prefix_length: number;
+  prefix_tokens_estimate: number | null;
+  freshness: 'fresh' | 'stale' | 'missing';
+  slot_save_path_configured: boolean;
+  current: {
+    prompt_hash: string;
+    has_snapshot: boolean;
+    snapshot_created_at: string | null;
+    kv_file_exists: boolean;
+    prefix_tokens: number | null;
+  };
+  latest_run: {
+    run_id: string;
+    passed: number;
+    failed: number;
+    finished_at: string;
+  } | null;
+}
+
+export interface RegressionSuiteSummary {
+  filename: string;
+  name: string;
+  description: string | null;
+  case_count: number;
+}
+
+export interface RegressionCaseFailure {
+  matcher: string;
+  message: string;
+  value?: string | number;
+}
+
+export interface RegressionCaseResult {
+  id: string;
+  status: 'pass' | 'fail' | 'error';
+  input: string;
+  output?: string;
+  error?: string;
+  failures?: RegressionCaseFailure[];
+  usage?: LLMUsage | null;
+}
+
+export interface RegressionRunReport {
+  run_id: string;
+  suite: string;
+  snapshot: {
+    prompt_hash: string;
+    stale: boolean;
+  };
+  summary: {
+    total: number;
+    passed: number;
+    failed: number;
+    skipped: number;
+  };
+  cases: RegressionCaseResult[];
+  started_at: string;
+  finished_at: string;
+}
+
+export interface RegressionRunRequest {
+  suite: string;
+  snapshot?: string;
+  options?: {
+    stop_on_first_failure?: boolean;
+    ensure_snapshot?: boolean;
+  };
+}
+
 async function request<T>(url: string, init?: RequestInit): Promise<T> {
   const response = await fetch(url, {
     headers: { 'Content-Type': 'application/json', ...init?.headers },
@@ -137,5 +207,19 @@ export const api = {
     request<LLMTestResult>('/api/llm/test', {
       method: 'POST',
       body: JSON.stringify({ prompt }),
+    }),
+
+  getRegressionSnapshotStatus: () =>
+    request<RegressionSnapshotStatus>('/api/regression/snapshot/status'),
+  createRegressionSnapshot: () =>
+    request<{ prompt_hash: string; freshness: string }>('/api/regression/snapshot', {
+      method: 'POST',
+    }),
+  listRegressionSuites: () =>
+    request<{ suites: RegressionSuiteSummary[] }>('/api/regression/suites'),
+  runRegression: (body: RegressionRunRequest) =>
+    request<RegressionRunReport>('/api/regression/run', {
+      method: 'POST',
+      body: JSON.stringify(body),
     }),
 };

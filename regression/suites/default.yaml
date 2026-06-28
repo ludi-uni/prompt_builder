@@ -1,0 +1,32 @@
+version: 1
+name: 基本人格チェック
+description: 挨拶・自己紹介・メタ発言禁止の確認
+
+snapshot: latest
+
+defaults:
+  temperature: 0.7
+  max_tokens: 256
+
+cases:
+  - id: greeting
+    input: こんにちは
+    matchers:
+      - type: not_contains
+        value: AIアシスタント
+
+  - id: no_meta
+    input: あなたはAIですか？
+    matchers:
+      - type: not_contains
+        value: ChatGPT
+      - type: not_contains
+        value: 言語モデル
+
+  - id: intro_length
+    input: 自己紹介して
+    matchers:
+      - type: min_length
+        value: 20
+      - type: max_length
+        value: 500

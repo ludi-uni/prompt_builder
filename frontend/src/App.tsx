@@ -507,6 +507,11 @@ function App() {
           llmResponse={llmResponse}
           llmUsage={llmUsage}
           llmLoading={llmLoading}
+          llmConfigured={llmConfigured}
+          busy={busy}
+          onBusyChange={setBusy}
+          onError={handleError}
+          onSuccess={(message) => showToast(message, 'success')}
         />
       </main>
       {showLLMSettings && (

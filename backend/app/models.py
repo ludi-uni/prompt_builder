@@ -69,3 +69,47 @@ class LLMHealthResponse(BaseModel):
     reachable: bool
     server_url: str | None = None
     error: str | None = None
+
+
+class MatcherSpec(BaseModel):
+    type: str
+    value: str | int | None = None
+    pattern: str | None = None
+    flags: str | None = None
+    path: str | None = None
+    match_mode: str | None = None
+
+
+class RegressionCaseSpec(BaseModel):
+    id: str
+    input: str
+    matchers: list[MatcherSpec] = Field(default_factory=list)
+    expected_file: str | None = None
+    match_mode: str | None = None
+    temperature: float | None = None
+    max_tokens: int | None = None
+
+
+class RegressionSuiteDefaults(BaseModel):
+    temperature: float = 0.7
+    max_tokens: int = 256
+
+
+class RegressionSuite(BaseModel):
+    version: int = 1
+    name: str
+    description: str | None = None
+    snapshot: str = "latest"
+    defaults: RegressionSuiteDefaults = Field(default_factory=RegressionSuiteDefaults)
+    cases: list[RegressionCaseSpec]
+
+
+class RegressionRunOptions(BaseModel):
+    stop_on_first_failure: bool = False
+    ensure_snapshot: bool = True
+
+
+class RegressionRunRequest(BaseModel):
+    suite: str
+    snapshot: str = "latest"
+    options: RegressionRunOptions = Field(default_factory=RegressionRunOptions)

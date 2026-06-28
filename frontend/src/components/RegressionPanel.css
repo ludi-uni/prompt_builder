@@ -1,0 +1,185 @@
+.regression-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.regression-banner {
+  padding: 10px 12px;
+  border-radius: 6px;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.regression-banner-warn {
+  background: rgba(255, 193, 7, 0.12);
+  border: 1px solid rgba(255, 193, 7, 0.35);
+  color: var(--text-primary);
+}
+
+.regression-toolbar {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.regression-snapshot-status {
+  font-size: 13px;
+  font-family: var(--font-mono);
+}
+
+.regression-snapshot-fresh {
+  color: #3dd68c;
+}
+
+.regression-snapshot-stale {
+  color: #ffb020;
+}
+
+.regression-snapshot-missing {
+  color: var(--text-secondary);
+}
+
+.regression-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.regression-btn {
+  padding: 6px 12px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--bg-code);
+  color: var(--text-primary);
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.regression-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.regression-btn-primary {
+  background: var(--accent, #4f8cff);
+  border-color: transparent;
+  color: #fff;
+}
+
+.regression-suite-select {
+  padding: 6px 10px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--bg-code);
+  color: var(--text-primary);
+  font-size: 13px;
+  min-width: 160px;
+}
+
+.regression-loading {
+  color: var(--text-secondary);
+  font-size: 14px;
+  margin: 0;
+}
+
+.regression-empty {
+  color: var(--text-secondary);
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.regression-summary {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+
+.regression-stale-tag {
+  font-size: 11px;
+  font-weight: 600;
+  color: #ffb020;
+  text-transform: uppercase;
+}
+
+.regression-case-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.regression-case {
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.regression-case-pass {
+  border-color: rgba(61, 214, 140, 0.35);
+}
+
+.regression-case-fail,
+.regression-case-error {
+  border-color: rgba(255, 96, 96, 0.35);
+}
+
+.regression-case-header {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border: none;
+  background: var(--bg-code);
+  color: var(--text-primary);
+  text-align: left;
+  cursor: pointer;
+  font-size: 13px;
+}
+
+.regression-case-icon {
+  width: 16px;
+  flex-shrink: 0;
+  font-weight: 700;
+}
+
+.regression-case-id {
+  font-family: var(--font-mono);
+  flex-shrink: 0;
+}
+
+.regression-case-reason {
+  color: var(--text-secondary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.regression-case-detail {
+  padding: 10px 12px;
+  border-top: 1px solid var(--border);
+  font-size: 13px;
+}
+
+.regression-case-detail pre {
+  white-space: pre-wrap;
+  word-break: break-word;
+  margin: 8px 0 0;
+  padding: 10px;
+  border-radius: 6px;
+  background: var(--bg-code);
+  font-family: var(--font-mono);
+  font-size: 12px;
+}
+
+.regression-failure {
+  margin: 6px 0 0;
+  color: #ff8080;
+}

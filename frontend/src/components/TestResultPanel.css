@@ -10,6 +10,10 @@
 .test-result-header {
   padding: 12px 16px;
   border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
 }
 
 .test-result-header h2 {
@@ -17,6 +21,27 @@
   font-size: 14px;
   font-weight: 600;
   color: var(--text-secondary);
+}
+
+.test-result-tabs {
+  display: flex;
+  gap: 4px;
+}
+
+.test-result-tab {
+  padding: 4px 10px;
+  border-radius: 6px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.test-result-tab.active {
+  background: var(--bg-code);
+  border-color: var(--border);
+  color: var(--text-primary);
 }
 
 .test-result-body {
