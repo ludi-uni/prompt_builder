@@ -21,15 +21,15 @@
 ## クイックスタート
 
 ```powershell
-git clone <your-repo-url>
+git clone https://github.com/ludi-uni/prompt_builder.git
 cd prompt_builder
 npm install
 npm run setup        # venv・依存関係・config/*.yaml を example から生成
 npm run dev
 ```
 
-- GUI: http://127.0.0.1:61010
-- API docs: http://127.0.0.1:61000/docs
+- GUI: [http://127.0.0.1:61010](http://127.0.0.1:61010)
+- API docs: [http://127.0.0.1:61000/docs](http://127.0.0.1:61000/docs)
 
 ポートは使用中の場合 61001 等に自動でずらされます。固定する場合:
 
@@ -39,19 +39,25 @@ $env:PROMPT_STUDIO_WEB_PORT = "61010"
 npm run dev
 ```
 
+
+
 ## コマンド一覧
 
-| コマンド | 説明 |
-|----------|------|
-| `npm run setup` | 初回セットアップ |
-| `npm run dev` | Backend + Frontend |
-| `npm run dev:all` | llama-server + Prompt Studio |
-| `npm run llama` | llama-server 起動 |
-| `npm run test` | Backend テスト |
-| `npm run build` | Frontend 本番ビルド |
-| `npm run lint` | Frontend + Backend Lint |
-| `npm run format` | フォーマット |
-| `npm run format:check` | フォーマット差分チェック（CI 向け） |
+
+| コマンド                   | 説明                           |
+| ---------------------- | ---------------------------- |
+| `npm run setup`        | 初回セットアップ                     |
+| `npm run dev`          | Backend + Frontend           |
+| `npm run dev:all`      | llama-server + Prompt Studio |
+| `npm run llama`        | llama-server 起動              |
+| `npm run test`         | Backend テスト                  |
+| `npm run build`        | Frontend 本番ビルド               |
+| `npm run lint`         | Frontend + Backend Lint      |
+| `npm run format`       | フォーマット                       |
+| `npm run format:check` | フォーマット差分チェック（CI 向け）          |
+
+
+
 
 ## ディレクトリ構成
 
@@ -68,6 +74,8 @@ prompt_builder/
 └── docs/              # 仕様書
 ```
 
+
+
 ## 使い方
 
 1. **Components** で Markdown ファイルを選択
@@ -77,16 +85,24 @@ prompt_builder/
 5. 右ペイン **テスト** — Single Test / Regression
 6. **Export to workspace** — `⋯` メニュー または `Ctrl+Shift+E`
 
+
+
 ### ショートカット
 
-| キー | 動作 |
-|------|------|
-| `Ctrl+S` | 保存 |
-| `Ctrl+Shift+E` | workspace に Export |
+
+| キー             | 動作                      |
+| -------------- | ----------------------- |
+| `Ctrl+S`       | 保存                      |
+| `Ctrl+Shift+E` | workspace に Export      |
 | `Ctrl+Shift+S` | Regression: Snapshot 更新 |
-| `Ctrl+Shift+R` | Regression: Run Suite |
+| `Ctrl+Shift+R` | Regression: Run Suite   |
+
+
+
 
 ## LLM 設定（llama.cpp）
+
+
 
 ### 1. モデル配置
 
@@ -94,11 +110,13 @@ prompt_builder/
 models/your-model.gguf
 ```
 
+
+
 ### 2. 設定ファイル
 
 setup で `config/*.example` からコピーされます。手動で編集する場合:
 
-**`config/llama.yaml`** — `npm run llama` 用
+`config/llama.yaml` — `npm run llama` 用
 
 ```yaml
 server:
@@ -110,7 +128,7 @@ extra_args:
   - workspace/regression/kv
 ```
 
-**`config/llm.yaml`** — Prompt Studio からの接続先
+`config/llm.yaml` — Prompt Studio からの接続先
 
 ```yaml
 server_url: http://127.0.0.1:8080
@@ -150,12 +168,14 @@ Markdown 結合時の区切りは `\n\n---\n\n` です。
 
 ## 公開リポジトリについて
 
-| 含まれる | 含まれない（`.gitignore`） |
-|----------|---------------------------|
-| ソース・サンプル layers | `config/llm.yaml`, `config/llama.yaml` |
-| `config/*.example` | `models/*.gguf` |
-| リグレッションスイート定義 | `workspace/regression/kv/`, `runs/`, `snapshots/` |
-| ドキュメント | `.venv/`, `node_modules/` |
+
+| 含まれる               | 含まれない（`.gitignore`）                               |
+| ------------------ | ------------------------------------------------- |
+| ソース・サンプル layers    | `config/llm.yaml`, `config/llama.yaml`            |
+| `config/*.example` | `models/*.gguf`                                   |
+| リグレッションスイート定義      | `workspace/regression/kv/`, `runs/`, `snapshots/` |
+| ドキュメント             | `.venv/`, `node_modules/`                         |
+
 
 初回 clone 後は必ず `npm run setup` を実行してください。
 
@@ -164,6 +184,8 @@ Markdown 結合時の区切りは `\n\n---\n\n` です。
 - [仕様書](docs/仕様書.md)
 - [リグレッション仕様](docs/リグレッション仕様.md)
 - [追加仕様](docs/追加仕様.md)
+
+
 
 ## ライセンス
 
