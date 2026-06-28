@@ -1,3 +1,14 @@
+.prompt-panel-embedded {
+  border-left: none;
+  height: 100%;
+}
+
+.prompt-building-inline {
+  margin: 0 0 8px;
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
 .prompt-panel {
   display: flex;
   flex-direction: column;
@@ -108,6 +119,13 @@
 }
 
 .prompt-git-hint {
+  margin: 0 0 12px;
+  font-size: 12px;
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
+.prompt-diff-hint {
   margin: 0 0 12px;
   font-size: 12px;
   color: var(--text-secondary);

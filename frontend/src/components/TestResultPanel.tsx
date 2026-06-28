@@ -11,11 +11,10 @@ interface TestResultPanelProps {
   llmLoading: boolean;
   llmConfigured: boolean;
   busy: boolean;
+  embedded?: boolean;
   onBusyChange: (busy: boolean) => void;
   onError: (err: unknown, fallback: string) => void;
   onSuccess: (message: string) => void;
-  onRunRegression?: () => void;
-  onUpdateSnapshot?: () => void;
 }
 
 function formatMetric(value: number | null | undefined, suffix = ''): string {
@@ -30,6 +29,7 @@ export function TestResultPanel({
   llmLoading,
   llmConfigured,
   busy,
+  embedded = false,
   onBusyChange,
   onError,
   onSuccess,
@@ -37,10 +37,10 @@ export function TestResultPanel({
   const [tab, setTab] = useState<'single' | 'regression'>('single');
 
   return (
-    <section className="test-result-panel">
+    <section className={`test-result-panel ${embedded ? 'test-result-panel-embedded' : ''}`}>
       <div className="test-result-header">
-        <h2>Test Result</h2>
-        <div className="test-result-tabs">
+        {!embedded && <h2>Test Result</h2>}
+        <div className={`test-result-tabs ${embedded ? 'test-result-tabs-embedded' : ''}`}>
           <button
             type="button"
             className={`test-result-tab ${tab === 'single' ? 'active' : ''}`}

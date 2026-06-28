@@ -6,8 +6,6 @@ interface ToolbarProps {
   onRunTest: () => void;
   onOpenLLMSettings: () => void;
   onToggleComponents: () => void;
-  showPrompt: boolean;
-  onTogglePrompt: () => void;
   llmConfigured: boolean;
   llmReachable: boolean;
   busy: boolean;
@@ -19,8 +17,6 @@ export function Toolbar({
   onRunTest,
   onOpenLLMSettings,
   onToggleComponents,
-  showPrompt,
-  onTogglePrompt,
   llmConfigured,
   llmReachable,
   busy,
@@ -61,9 +57,6 @@ export function Toolbar({
         </button>
       </div>
       <div className="toolbar-right">
-        <button type="button" className="btn-secondary" onClick={onTogglePrompt}>
-          {showPrompt ? 'Hide Prompt' : 'Show Prompt'}
-        </button>
         <div className="toolbar-menu" ref={menuRef}>
           <button
             type="button"

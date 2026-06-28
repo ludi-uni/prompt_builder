@@ -55,6 +55,11 @@
   background: rgba(239, 68, 68, 0.12);
 }
 
+.save-status-dirty {
+  color: var(--warning);
+  background: rgba(234, 179, 8, 0.15);
+}
+
 .editor-tabs {
   display: flex;
   align-items: center;
@@ -79,6 +84,16 @@
 .editor-tabs button.active {
   background: var(--bg-active);
   color: var(--accent);
+}
+
+.btn-save {
+  padding: 6px 12px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--accent, #4f8cff);
+  color: #fff;
+  font-size: 13px;
+  cursor: pointer;
 }
 
 .btn-save:disabled {

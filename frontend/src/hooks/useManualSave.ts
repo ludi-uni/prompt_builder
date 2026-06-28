@@ -1,29 +1,26 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { api } from '../api/client';
 
-export type SaveStatus = 'idle' | 'pending' | 'saving' | 'saved' | 'error';
+export type SaveStatus = 'idle' | 'saving' | 'saved' | 'error';
 
-interface UseAutoSaveOptions {
+interface UseManualSaveOptions {
   layerId: string | null;
   filename: string | null;
   content: string;
   savedContent: string;
   setSavedContent: (content: string) => void;
   onAfterSave?: () => void | Promise<void>;
-  debounceMs?: number;
 }
 
-export function useAutoSave({
+export function useManualSave({
   layerId,
   filename,
   content,
   savedContent,
   setSavedContent,
   onAfterSave,
-  debounceMs = 500,
-}: UseAutoSaveOptions) {
+}: UseManualSaveOptions) {
   const [saveStatus, setSaveStatus] = useState<SaveStatus>('idle');
-  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const saveChainRef = useRef<Promise<boolean>>(Promise.resolve(true));
   const contentRef = useRef(content);
   const savedContentRef = useRef(savedContent);
@@ -34,11 +31,6 @@ export function useAutoSave({
   const isDirty = content !== savedContent;
 
   const flushSave = useCallback(async (): Promise<boolean> => {
-    if (timerRef.current) {
-      clearTimeout(timerRef.current);
-      timerRef.current = null;
-    }
-
     const run = async (): Promise<boolean> => {
       const currentLayerId = layerId;
       const currentFilename = filename;
@@ -66,26 +58,6 @@ export function useAutoSave({
     saveChainRef.current = saveChainRef.current.then(run);
     return saveChainRef.current;
   }, [layerId, filename, setSavedContent, onAfterSave]);
-
-  useEffect(() => {
-    if (!isDirty) {
-      return;
-    }
-
-    setSaveStatus('pending');
-    if (timerRef.current) {
-      clearTimeout(timerRef.current);
-    }
-    timerRef.current = setTimeout(() => {
-      void flushSave();
-    }, debounceMs);
-
-    return () => {
-      if (timerRef.current) {
-        clearTimeout(timerRef.current);
-      }
-    };
-  }, [content, savedContent, isDirty, debounceMs, flushSave]);
 
   useEffect(() => {
     const onBeforeUnload = (e: BeforeUnloadEvent) => {

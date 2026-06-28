@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   collectImportableFiles,
   normalizeImportFilename,
@@ -16,12 +16,11 @@ import {
 import { ComponentsPanel } from './components/ComponentsPanel';
 import { EditorPanel } from './components/EditorPanel';
 import { LLMSettingsModal } from './components/LLMSettingsModal';
-import { PromptPanel } from './components/PromptPanel';
-import { TestResultPanel } from './components/TestResultPanel';
+import { RightPanel, type RightPanelTab } from './components/RightPanel';
 import { Toast } from './components/Toast';
 import { Toolbar } from './components/Toolbar';
-import { useAutoSave } from './hooks/useAutoSave';
 import { useLayoutMode } from './hooks/useLayoutMode';
+import { useManualSave } from './hooks/useManualSave';
 import { getLayerDisplayName } from './utils/displayName';
 import { appendFileToBuild, removeFileFromBuild } from './utils/exportBuild';
 import './App.css';
@@ -48,8 +47,8 @@ function App() {
   const [buildConfig, setBuildConfig] = useState<BuildConfig | null>(null);
   const [builtPrompt, setBuiltPrompt] = useState('');
   const [previousPrompt, setPreviousPrompt] = useState('');
-  const [previewMode, setPreviewMode] = useState<'rendered' | 'raw'>('rendered');
-  const [editorTab, setEditorTab] = useState<'edit' | 'preview'>('edit');
+  const [initialPrompt, setInitialPrompt] = useState('');
+  const [rightPanelTab, setRightPanelTab] = useState<RightPanelTab>('prompt');
   const [promptLoading, setPromptLoading] = useState(false);
   const [busy, setBusy] = useState(false);
   const [toast, setToast] = useState<{
@@ -63,13 +62,13 @@ function App() {
   const [llmResponse, setLLMResponse] = useState<string | null>(null);
   const [llmUsage, setLLMUsage] = useState<LLMUsage | null>(null);
   const [llmLoading, setLLMLoading] = useState(false);
+  const builtPromptRef = useRef('');
+  const initialPromptSetRef = useRef(false);
 
   const {
     showComponents,
-    showPrompt,
     toggleComponents,
     closeComponents,
-    togglePrompt,
   } = useLayoutMode();
 
   const showToast = useCallback(
@@ -87,30 +86,39 @@ function App() {
     [showToast],
   );
 
-  const refreshPrompt = useCallback(async () => {
+  const refreshPrompt = useCallback(async (): Promise<string> => {
     setPromptLoading(true);
     try {
       const result = await api.buildPrompt();
-      setBuiltPrompt((prev) => {
-        if (prev && prev !== result.prompt) {
-          setPreviousPrompt(prev);
-        }
-        return result.prompt;
-      });
+      setBuiltPrompt(result.prompt);
+      builtPromptRef.current = result.prompt;
+      if (!initialPromptSetRef.current) {
+        setInitialPrompt(result.prompt);
+        initialPromptSetRef.current = true;
+      }
+      return result.prompt;
     } catch (err) {
       handleError(err, 'Failed to build prompt');
+      return builtPromptRef.current;
     } finally {
       setPromptLoading(false);
     }
   }, [handleError]);
 
-  const { saveStatus, flushSave } = useAutoSave({
+  const refreshPromptWithSnapshot = useCallback(async (): Promise<string> => {
+    setPreviousPrompt(builtPromptRef.current);
+    return refreshPrompt();
+  }, [refreshPrompt]);
+
+  const { saveStatus, isDirty, flushSave } = useManualSave({
     layerId: selectedLayerId,
     filename: selectedFile,
     content,
     savedContent,
     setSavedContent,
-    onAfterSave: () => refreshPrompt(),
+    onAfterSave: () => {
+      void refreshPromptWithSnapshot();
+    },
   });
 
   const refreshLayerFiles = useCallback(async (layerList: LayerMeta[]) => {
@@ -167,7 +175,15 @@ function App() {
 
   const handleSelectFile = useCallback(
     async (layerId: string, filename: string, closeDrawer = true) => {
-      await flushSave();
+      if (content !== savedContent) {
+        const shouldSave = window.confirm(
+          '未保存の変更があります。保存してから切り替えますか？\nOK = 保存 / キャンセル = 破棄して切り替え',
+        );
+        if (shouldSave) {
+          const ok = await flushSave();
+          if (!ok) return;
+        }
+      }
       try {
         const fileRes = await api.getFile(layerId, filename);
         setSelectedLayerId(layerId);
@@ -181,7 +197,7 @@ function App() {
         handleError(err, 'Failed to load file');
       }
     },
-    [flushSave, closeComponents, handleError],
+    [content, savedContent, flushSave, closeComponents, handleError],
   );
 
   const handleCreateLayer = async (
@@ -407,14 +423,20 @@ function App() {
   }, [busy, handleExportPrompt]);
 
   const handleRunTest = async () => {
-    if (!builtPrompt) return;
+    if (!builtPromptRef.current && !isDirty) return;
+    setRightPanelTab('test');
     setBusy(true);
     setLLMLoading(true);
     setLLMResponse(null);
     setLLMUsage(null);
     try {
-      await flushSave();
-      const result = await api.testLLM(builtPrompt);
+      if (isDirty) {
+        const ok = await flushSave();
+        if (!ok) return;
+      }
+      const promptToTest = builtPromptRef.current;
+      if (!promptToTest) return;
+      const result = await api.testLLM(promptToTest);
       setLLMResponse(result.response);
       setLLMUsage(result.usage);
       setLLMReachable(true);
@@ -440,7 +462,7 @@ function App() {
     }
   };
 
-  const layoutClass = showPrompt ? 'layout-detail' : 'layout-focus';
+  const layoutClass = 'layout-split';
 
   return (
     <div className="app">
@@ -449,8 +471,6 @@ function App() {
         onRunTest={() => void handleRunTest()}
         onOpenLLMSettings={() => setShowLLMSettings(true)}
         onToggleComponents={toggleComponents}
-        showPrompt={showPrompt}
-        onTogglePrompt={togglePrompt}
         llmConfigured={llmConfigured}
         llmReachable={llmReachable}
         busy={busy}
@@ -477,8 +497,8 @@ function App() {
               onCreateLayer={handleCreateLayer}
               onCreateFile={handleCreateFile}
               onImportFiles={handleImportFiles}
-              onDeleteFile={(layerId, file) => void handleDeleteFile(layerId, file)}
-              onDeleteLayer={(id) => void handleDeleteLayer(id)}
+              onDeleteFile={handleDeleteFile}
+              onDeleteLayer={handleDeleteLayer}
             />
           </div>
         </>
@@ -488,21 +508,17 @@ function App() {
           filename={selectedFile}
           content={content}
           saveStatus={saveStatus}
+          isDirty={isDirty}
           onChange={setContent}
           onFlushSave={flushSave}
-          tab={editorTab}
-          onTabChange={setEditorTab}
         />
-        {showPrompt && (
-          <PromptPanel
-            prompt={builtPrompt}
-            previousPrompt={previousPrompt}
-            loading={promptLoading}
-            mode={previewMode}
-            onModeChange={setPreviewMode}
-          />
-        )}
-        <TestResultPanel
+        <RightPanel
+          tab={rightPanelTab}
+          onTabChange={setRightPanelTab}
+          builtPrompt={builtPrompt}
+          previousPrompt={previousPrompt}
+          initialPrompt={initialPrompt}
+          promptLoading={promptLoading}
           inputPrompt={builtPrompt}
           llmResponse={llmResponse}
           llmUsage={llmUsage}

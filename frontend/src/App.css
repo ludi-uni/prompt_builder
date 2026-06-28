@@ -11,16 +11,8 @@
   overflow: hidden;
 }
 
-.main-layout.layout-focus {
-  grid-template-columns: 1fr 1fr;
-}
-
-.main-layout.layout-detail {
-  grid-template-columns: 1fr minmax(280px, 0.9fr) 1fr;
-}
-
-.main-layout .editor-panel {
-  border-right: none;
+.main-layout.layout-split {
+  grid-template-columns: minmax(0, 1fr) minmax(320px, 0.95fr);
 }
 
 .drawer-backdrop {
@@ -55,13 +47,8 @@
 }
 
 @media (max-width: 1024px) {
-  .main-layout.layout-focus {
+  .main-layout.layout-split {
     grid-template-columns: 1fr;
-    grid-template-rows: 1fr 1fr;
-  }
-
-  .main-layout.layout-detail {
-    grid-template-columns: 1fr;
-    grid-template-rows: 1fr 1fr 1fr;
+    grid-template-rows: minmax(240px, 1fr) minmax(280px, 1fr);
   }
 }

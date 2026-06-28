@@ -1,3 +1,16 @@
+.test-result-panel-embedded {
+  border-left: none;
+  height: 100%;
+}
+
+.test-result-panel-embedded .test-result-header {
+  padding: 8px 12px;
+}
+
+.test-result-tabs-embedded {
+  width: 100%;
+}
+
 .test-result-panel {
   display: flex;
   flex-direction: column;
